@@ -55,3 +55,12 @@ git clone https://github.com/SagarShahani/decode-bench.git
 cd decode-bench
 python3 -m http.server 8000
 # Then visit http://localhost:8000
+```
+## Author
+Sagar Shahani
+
+GitHub: **@SagarShahani**
+
+LinkedIn: **sagar-ali-66a324277**
+
+Medium: **@SaGarShahani**
