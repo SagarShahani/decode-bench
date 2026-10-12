@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-accent="gold">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#080D0C">
+<meta name="description" content="Decode Bench: chain operations to encode, decode, hash, encrypt and inspect data. Runs entirely in your browser.">
+<title>Decode Bench</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2l11 8-11 20L5 10z' fill='%23D9B65F'/%3E%3Cpath d='M5 10h22M16 2l-4.5 8L16 30l4.5-20z' stroke='%23000' stroke-opacity='.3' fill='none'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=JetBrains+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --a-l:#8F6A17; --a-d:#D9B65F;
+  --bg:#EDEEE9; --ink:#0E1B17; --soft:#56655F; --faint:#8A9791;
+  --panel:rgba(255,255,255,.66); --solid:#FAFAF6; --field:#FFFFFF;
+  --line:rgba(14,27,23,.11); --line2:rgba(14,27,23,.24);
+  --shadow:0 1px 0 rgba(255,255,255,.9) inset,0 18px 50px -24px rgba(14,27,23,.35);
+  --err:#B3261E; --ok:#1B7F4B; --on-accent:#fff; --noise:.06;
+  --serif:'Cormorant Garamond','Iowan Old Style','Palatino Linotype',Georgia,serif;
+  --sans:'Manrope',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --fs:14px;
+  --c-Encoding:#2F55D4; --c-Hashing:#7B45C9; --c-Crypto:#B02F5E; --c-Ciphers:#0E8A73; --c-Text:#A8741A;
+  --c-Extract:#C0471A; --c-Data:#3B7D16; --c-Numbers:#1B7FA6; --c-Generate:#8A5A44;
+}
+html{--accent:var(--a-l)}
+html[data-theme=dark]{
+  --accent:var(--a-d);
+  --bg:#080D0C; --ink:#EFEADB; --soft:#9AA7A1; --faint:#6B7A74;
+  --panel:rgba(20,30,27,.68); --solid:#101917; --field:#0B1311;
+  --line:rgba(239,234,219,.09); --line2:rgba(239,234,219,.2);
+  --shadow:0 1px 0 rgba(255,255,255,.04) inset,0 24px 60px -28px rgba(0,0,0,.85);
+  --err:#FF8E84; --ok:#59D68C; --on-accent:#16110A; --noise:.09;
+  --c-Encoding:#7C98FF; --c-Hashing:#B596FF; --c-Crypto:#F07A9C; --c-Ciphers:#3FD1B3; --c-Text:#E9B04F;
+  --c-Extract:#FF8F5C; --c-Data:#8FD14F; --c-Numbers:#5CC4EC; --c-Generate:#D69C7E;
+}
+html[data-accent=emerald]{--a-l:#0B7A5B;--a-d:#4ADBA8}
+html[data-accent=sapphire]{--a-l:#2748C9;--a-d:#7C98FF}
+html[data-accent=rose]{--a-l:#B0305A;--a-d:#F07A9C}
+html[data-accent=amethyst]{--a-l:#6D3FC0;--a-d:#B596FF}
+
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased;overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+::selection{background:color-mix(in srgb,var(--accent) 35%,transparent)}
+.bg{position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:radial-gradient(900px 520px at 6% -12%,color-mix(in srgb,var(--accent) 20%,transparent),transparent 62%),
+             radial-gradient(760px 520px at 104% 112%,color-mix(in srgb,var(--accent) 13%,transparent),transparent 62%)}
+.bg::after{content:'';position:absolute;inset:0;opacity:var(--noise);
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+.app{height:100vh;height:100dvh;display:flex;flex-direction:column;gap:14px;padding:14px;padding-top:max(14px,env(safe-area-inset-top));padding-bottom:max(14px,env(safe-area-inset-bottom))}
+.card{position:relative;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);
+  backdrop-filter:blur(18px) saturate(1.2);-webkit-backdrop-filter:blur(18px) saturate(1.2)}
+.card::before{content:'';position:absolute;inset:0 0 auto 0;height:1px;pointer-events:none;opacity:.8;
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 75%,transparent),transparent)}
+
+/* top bar */
+.top{display:flex;align-items:center;gap:16px;padding:10px 16px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;margin-right:auto}
+.brand svg{width:30px;height:30px;filter:drop-shadow(0 4px 10px color-mix(in srgb,var(--accent) 45%,transparent))}
+.brand h1{font:600 28px/1 var(--serif);letter-spacing:.015em;margin:0}
+.brand span{color:var(--soft);font-size:12.5px;display:block;margin-top:2px}
+.finder{display:flex;align-items:center;gap:10px;min-width:260px;flex:0 1 340px;padding:8px 12px;border:1px solid var(--line2);border-radius:12px;background:var(--field);color:var(--soft);cursor:pointer}
+.finder:hover{border-color:var(--accent)}
+.finder kbd{margin-left:auto}
+kbd{font:500 11px var(--mono);border:1px solid var(--line2);border-bottom-width:2px;border-radius:6px;padding:1px 6px;color:var(--soft);background:var(--field)}
+.acts{display:flex;gap:6px;align-items:center}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--line2);background:var(--field);color:var(--ink);border-radius:10px;padding:7px 12px;cursor:pointer;font-weight:600;font-size:13px;transition:border-color .2s,background .2s,transform .1s,box-shadow .2s;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn:active{transform:translateY(1px)}
+.btn.sm{padding:5px 9px;font-size:12.5px;border-radius:8px}
+.btn.ghost{background:transparent;border-color:transparent}
+.btn.ghost:hover{background:color-mix(in srgb,var(--accent) 12%,transparent);border-color:transparent}
+.btn.primary{position:relative;overflow:hidden;border-color:transparent;color:var(--on-accent);font-weight:700;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 70%,#fff),var(--accent) 52%,color-mix(in srgb,var(--accent) 78%,#000));
+  box-shadow:0 10px 28px -12px var(--accent)}
+.btn.primary::after{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.45) 50%,transparent 65%);transform:translateX(-120%);transition:transform .7s}
+.btn.primary:hover::after{transform:translateX(120%)}
+.btn.big{padding:10px 22px;font-size:14px;border-radius:12px}
+.btn svg,.ib svg{flex:none}
+.ib{width:30px;height:30px;display:inline-grid;place-items:center;border:0;background:transparent;border-radius:8px;color:var(--soft);cursor:pointer;transition:background .15s,color .15s}
+.ib:hover{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--ink)}
+.ib.on{color:var(--accent)}
+.ib:disabled{opacity:.35;cursor:default;background:transparent}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:10px;overflow:hidden;background:var(--field)}
+.seg button{border:0;background:transparent;padding:5px 11px;cursor:pointer;color:var(--soft);font-weight:600;font-size:12.5px}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--on-accent)}
+.sw{position:relative;display:inline-flex;align-items:center;gap:9px;cursor:pointer;user-select:none;font-weight:500}
+.sw input{position:absolute;opacity:0;width:0;height:0}
+.sw i{width:36px;height:20px;border-radius:20px;background:var(--line2);position:relative;transition:background .2s;flex:none}
+.sw i::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.sw input:checked+i{background:var(--accent)}
+.sw input:checked+i::after{transform:translateX(16px)}
+.sw input:focus-visible+i{outline:2px solid var(--accent);outline-offset:2px}
+
+/* layout */
+.main{flex:1;min-height:0;display:grid;grid-template-columns:262px minmax(340px,420px) 1fr;gap:14px}
+body.focus .main{grid-template-columns:minmax(340px,440px) 1fr}
+body.focus #opsPanel{display:none}
+.panel{display:flex;flex-direction:column;min-height:0}
+.ph{display:flex;align-items:center;gap:8px;padding:12px 14px 8px;flex-wrap:wrap}
+.ph h2{margin:0;font:600 22px/1.1 var(--serif);letter-spacing:.01em;margin-right:auto}
+.ph h2 small{font:500 12px var(--mono);color:var(--soft);margin-left:6px;letter-spacing:0}
+.scroll{overflow:auto;flex:1;padding:0 12px 12px;scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+.io{display:grid;grid-template-rows:1fr 1fr;gap:14px;min-height:0}
+.hint{color:var(--soft);padding:10px 6px}
+
+/* operations */
+.sbox{margin:0 12px 8px;display:flex;align-items:center;gap:8px;padding:0 10px;border:1px solid var(--line2);border-radius:10px;background:var(--field);color:var(--soft)}
+.sbox input{flex:1;min-width:0;border:0;background:transparent;padding:8px 0;outline:0}
+.sbox:focus-within{border-color:var(--accent)}
+.tabs{margin:0 12px 6px}
+.tabs .seg{width:100%}.tabs .seg button{flex:1}
+.grp{margin-top:4px}
+.grp summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:8px 4px 4px;font:600 15px var(--serif);color:var(--soft);letter-spacing:.02em}
+.grp summary::-webkit-details-marker{display:none}
+.grp summary::before{content:'';width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(-45deg);transition:transform .2s;margin:0 3px 0 2px}
+.grp[open] summary::before{transform:rotate(45deg)}
+.grp summary em{margin-left:auto;font:500 11px var(--mono);font-style:normal;color:var(--faint)}
+.op{display:flex;align-items:center;gap:9px;padding:6px 6px 6px 8px;border-radius:9px;cursor:pointer}
+.op:hover,.op:focus-visible{background:color-mix(in srgb,var(--c) 12%,transparent)}
+.op .dot{width:7px;height:7px;border-radius:50%;background:var(--c);flex:none;box-shadow:0 0 10px var(--c)}
+.op .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.star{border:0;background:transparent;color:var(--faint);cursor:pointer;padding:2px;border-radius:6px;opacity:0;display:grid}
+.op:hover .star,.op:focus-within .star,.star.on{opacity:1}
+.star.on{color:var(--accent)}
+@media (pointer:coarse){.star{opacity:1}}
+
+/* recipe */
+#recipe{min-height:100%;padding-bottom:30px;position:relative}
+.empty{border:1px dashed var(--line2);border-radius:14px;padding:22px;color:var(--soft);text-align:center;margin-top:4px}
+.empty b{display:block;font:600 20px var(--serif);color:var(--ink);margin-bottom:4px}
+.step{position:relative;background:var(--solid);border:1px solid var(--line);border-radius:12px;margin-bottom:9px;box-shadow:0 8px 24px -18px rgba(0,0,0,.5)}
+.step::before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:3px;background:var(--c);box-shadow:0 0 12px var(--c)}
+.step.new{animation:pop .28s cubic-bezier(.2,.8,.2,1)}
+.step.off .args,.step.off .step-h b{opacity:.45}
+.step.bp{border-color:color-mix(in srgb,var(--accent) 60%,transparent)}
+.step-h{display:flex;align-items:center;gap:2px;padding:6px 6px 6px 12px}
+.step-h b{flex:1;min-width:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0 4px}
+.num{font:600 11px var(--mono);color:var(--soft);min-width:18px}
+.grip{cursor:grab;color:var(--faint);display:grid;place-items:center;width:22px;height:26px;border-radius:6px}
+.grip:hover{color:var(--ink)}
+.step-h .ib{width:26px;height:26px}
+.mv{display:none!important}
+@media (pointer:coarse){.mv{display:inline-grid!important}}
+.args{padding:0 12px 11px 14px;display:grid;gap:8px}
+.args label{display:grid;gap:3px;font-size:12px;color:var(--soft);font-weight:600}
+.args input[type=text],.args input[type=number],.args select{width:100%;padding:6px 9px;border:1px solid var(--line2);border-radius:8px;background:var(--field);color:var(--ink);font:400 12.5px var(--mono)}
+.args input:focus,.args select:focus{outline:0;border-color:var(--accent)}
+.args label.b{display:flex;align-items:center;gap:8px;font-weight:500}
+.err{color:var(--err);font:400 12px var(--mono);padding:0 14px 10px;word-break:break-word}
+.peek{margin:0 12px 11px 14px;border:1px solid var(--line);border-radius:8px;background:var(--field);overflow:hidden}
+.peek .pm{font:500 11px var(--mono);color:var(--soft);padding:4px 9px;border-bottom:1px solid var(--line)}
+.peek pre{margin:0;padding:7px 9px;max-height:110px;overflow:auto;font:400 12px/1.5 var(--mono);white-space:pre-wrap;word-break:break-all}
+.dropline{height:3px;border-radius:3px;background:var(--accent);margin:-5px 0 6px;box-shadow:0 0 12px var(--accent)}
+.foot{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line);background:color-mix(in srgb,var(--solid) 60%,transparent)}
+.foot .btn.primary{margin-left:auto}
+
+/* io */
+.meta{display:flex;gap:6px;flex-wrap:wrap}
+.mt{font:500 11.5px var(--mono);color:var(--soft);padding:2px 9px;border:1px solid var(--line);border-radius:20px;background:color-mix(in srgb,var(--field) 70%,transparent)}
+.mt.kind{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 45%,transparent)}
+textarea{flex:1;min-height:90px;margin:0 14px 14px;padding:12px 14px;border:1px solid var(--line2);border-radius:12px;background:var(--field);font:400 var(--fs)/1.6 var(--mono);resize:none;tab-size:4;outline:0}
+textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent)}
+#out.bad{color:var(--err)}
+.chip{margin:0 14px 8px;padding:6px 10px;background:var(--field);border:1px solid var(--line2);border-radius:10px;font-size:12.5px;display:none;align-items:center;gap:10px}
+.chip span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#inPanel.drop{outline:2px dashed var(--accent);outline-offset:-8px}
+
+/* dialogs */
+dialog{border:1px solid var(--line2);background:var(--solid);color:var(--ink);border-radius:22px;padding:0;box-shadow:0 50px 140px -30px rgba(0,0,0,.7);width:min(740px,calc(100vw - 24px));max-height:min(84vh,780px);overflow:hidden}
+dialog[open]{display:flex;flex-direction:column;animation:pop .22s cubic-bezier(.2,.8,.2,1)}
+dialog::backdrop{background:rgba(4,8,7,.55);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
+.dh{display:flex;align-items:center;gap:10px;padding:16px 18px 10px}
+.dh h2{margin:0;font:600 26px/1.1 var(--serif);flex:1}
+.dh p{margin:2px 0 0;color:var(--soft);font-size:13px}
+.db{overflow:auto;padding:4px 18px 18px;scrollbar-width:thin}
+.row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .tx{flex:1;min-width:0}
+.row .tx b{display:block;font-weight:700}
+.row .tx span{color:var(--soft);font-size:13px}
+.swatches{display:flex;gap:8px}
+.swatches button{width:28px;height:28px;border-radius:50%;border:2px solid transparent;background:var(--s);cursor:pointer;box-shadow:0 0 0 1px var(--line2)}
+.swatches button[aria-pressed=true]{border-color:var(--ink)}
+input[type=range]{accent-color:var(--accent)}
+.fld{width:100%;padding:8px 11px;border:1px solid var(--line2);border-radius:10px;background:var(--field);font:400 13px var(--mono);outline:0}
+.fld:focus{border-color:var(--accent)}
+.chain{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
+.chain span{font-weight:700;font-size:12.5px;padding:3px 10px;border-radius:20px;background:color-mix(in srgb,var(--accent) 14%,transparent);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+.chain i{color:var(--faint);font-style:normal}
+.pv{margin:0 0 10px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--field);font:400 12.5px/1.5 var(--mono);max-height:90px;overflow:auto;white-space:pre-wrap;word-break:break-all}
+.res{padding:14px 0;border-bottom:1px solid var(--line)}
+.res:last-child{border-bottom:0}
+.res .top2{display:flex;align-items:center;gap:10px}.res .top2 .chain{flex:1;margin:0}
+#palette{width:min(620px,calc(100vw - 24px));margin-top:12vh}
+#palIn{width:100%;border:0;border-bottom:1px solid var(--line);background:transparent;padding:18px 20px;font:500 17px var(--sans);outline:0}
+#palList{overflow:auto;padding:8px;max-height:52vh}
+.pi{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer}
+.pi[aria-selected=true]{background:color-mix(in srgb,var(--accent) 16%,transparent)}
+.pi .dot{width:7px;height:7px;border-radius:50%;background:var(--c,var(--accent))}
+.pi em{margin-left:auto;font:500 11.5px var(--mono);color:var(--soft);font-style:normal}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:10px 18px;align-items:center}
+#toasts{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:grid;gap:8px;z-index:50;pointer-events:none}
+.toast{background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:12px;font-weight:600;font-size:13px;box-shadow:0 18px 40px -16px rgba(0,0,0,.6);animation:pop .22s}
+.toast.out{opacity:0;transition:opacity .3s}
+
+@keyframes pop{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.top,.main>*{animation:rise .6s cubic-bezier(.2,.8,.2,1) both}
+.main>:nth-child(1){animation-delay:.05s}.main>:nth-child(2){animation-delay:.12s}.main>:nth-child(3){animation-delay:.19s}
+
+@media (max-width:1180px){
+  .main{grid-template-columns:240px 1fr}
+  body.focus .main{grid-template-columns:1fr}
+  .io{grid-column:1/-1;min-height:620px}
+}
+@media (max-width:760px){
+  body{overflow:auto}
+  .app{height:auto;min-height:100dvh}
+  .main{display:flex;flex-direction:column}
+  .panel .scroll{max-height:340px}
+  .io{display:flex;flex-direction:column;min-height:0}
+  textarea{min-height:200px}
+  .finder{flex:1 1 100%;order:3}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"></div>
+<div class="app">
+  <header class="top card">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="gem" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:color-mix(in srgb,var(--accent) 55%,#fff)"/><stop offset="1" style="stop-color:color-mix(in srgb,var(--accent) 80%,#000)"/></linearGradient></defs><path d="M16 2l11 8-11 20L5 10z" fill="url(#gem)"/><path d="M5 10h22M16 2l-4.5 8L16 30l4.5-20z" stroke="rgba(0,0,0,.28)" fill="none"/></svg>
+      <div><h1>Decode Bench</h1><span>Encode, decode, hash and inspect data privately in your browser</span></div>
+    </div>
+    <button class="finder" id="openPalette" type="button" aria-label="Open command palette"><span data-ic="search"></span>Find an operation or action<kbd>Ctrl K</kbd></button>
+    <div class="acts">
+      <button class="btn" id="magicBtn" type="button" data-ic="wand">Magic</button>
+      <button class="btn" id="libBtn" type="button" data-ic="book">Library</button>
+      <button class="ib" id="focusBtn" type="button" title="Hide the operations panel" aria-label="Toggle focus mode" data-ic="sidebar"></button>
+      <button class="ib" id="themeBtn" type="button" title="Switch theme" aria-label="Switch theme"></button>
+      <button class="ib" id="settingsBtn" type="button" title="Settings" aria-label="Settings" data-ic="sliders"></button>
+      <button class="ib" id="helpBtn" type="button" title="Shortcuts and tips" aria-label="Help" data-ic="help"></button>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="card panel" id="opsPanel">
+      <div class="ph"><h2>Operations</h2></div>
+      <label class="sbox"><span data-ic="search"></span><input id="search" type="search" placeholder="Search" aria-label="Search operations"></label>
+      <div class="tabs"><div class="seg" id="tabs"><button type="button" data-tab="all" aria-pressed="true">All</button><button type="button" data-tab="fav" aria-pressed="false">Starred</button><button type="button" data-tab="recent" aria-pressed="false">Recent</button></div></div>
+      <div class="scroll" id="ops"></div>
+    </section>
+
+    <section class="card panel" id="recipePanel">
+      <div class="ph">
+        <h2>Recipe<small id="stepCount"></small></h2>
+        <button class="ib" id="undoBtn" type="button" title="Undo (Alt+Z)" aria-label="Undo" data-ic="undo"></button>
+        <button class="ib" id="redoBtn" type="button" title="Redo (Alt+Shift+Z)" aria-label="Redo" data-ic="redo"></button>
+        <button class="ib" id="shareBtn" type="button" title="Copy share link" aria-label="Copy share link" data-ic="link"></button>
+        <button class="ib" id="clearRecipe" type="button" title="Clear recipe" aria-label="Clear recipe" data-ic="trash"></button>
+      </div>
+      <div class="scroll" id="recipeWrap"><div id="recipe"></div></div>
+      <div class="foot">
+        <label class="sw"><input type="checkbox" id="auto"><i></i>Auto bake</label>
+        <button class="btn primary big" id="bakeBtn" type="button" data-ic="play">Bake</button>
+      </div>
+    </section>
+
+    <div class="io">
+      <section class="card panel" id="inPanel">
+        <div class="ph">
+          <h2>Input</h2>
+          <div class="meta" id="inMeta"></div>
+          <button class="btn sm" id="magicIn" type="button" data-ic="wand">Magic</button>
+          <button class="btn sm" id="openFile" type="button" data-ic="upload">Open file</button>
+          <button class="btn sm ghost" id="clearIn" type="button">Clear</button>
+          <input type="file" id="file" hidden>
+        </div>
+        <div class="chip" id="fileChip"><span id="fileName"></span><button class="btn sm" id="dropFile" type="button">Use typed text</button></div>
+        <textarea id="in" spellcheck="false" aria-label="Input" placeholder="Type, paste, or drop a file here"></textarea>
+      </section>
+      <section class="card panel" id="outPanel">
+        <div class="ph">
+          <h2>Output</h2>
+          <div class="meta" id="outMeta"></div>
+          <div class="seg" id="viewSeg" aria-label="Output view"><button type="button" data-v="text" aria-pressed="true">Text</button><button type="button" data-v="hex" aria-pressed="false">Hex</button><button type="button" data-v="b64" aria-pressed="false">Base64</button></div>
+        </div>
+        <div class="ph" style="padding-top:0">
+          <button class="btn sm" id="copy" type="button" data-ic="copy">Copy</button>
+          <button class="btn sm" id="toIn" type="button" data-ic="arrowUp">Use as input</button>
+          <button class="btn sm" id="save" type="button" data-ic="download">Save</button>
+          <button class="btn sm" id="magicOut" type="button" data-ic="wand">Magic</button>
+          <button class="btn sm ghost" id="wrapBtn" type="button" data-ic="wrap">Wrap</button>
+        </div>
+        <textarea id="out" readonly spellcheck="false" aria-label="Output"></textarea>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- Command palette -->
+<dialog id="palette" aria-label="Command palette">
+  <input id="palIn" type="text" placeholder="Type an operation or action" autocomplete="off" spellcheck="false" aria-label="Command palette search">
+  <div id="palList" role="listbox"></div>
+</dialog>
+
+<!-- Magic -->
+<dialog id="magicDlg">
+  <div class="dh"><div style="flex:1"><h2 id="magicTitle">Magic</h2><p>Tries common decodings, up to three layers deep, and ranks the most readable results.</p></div><button class="ib" data-close type="button" aria-label="Close" data-ic="x"></button></div>
+  <div class="db"><div class="meta" id="magicKind" style="margin-bottom:6px"></div><div id="magicList"></div></div>
+</dialog>
+
+<!-- Library -->
+<dialog id="libDlg">
+  <div class="dh"><div style="flex:1"><h2>Library</h2><p>Start from an example, or keep your own recipes on this device.</p></div><button class="ib" data-close type="button" aria-label="Close" data-ic="x"></button></div>
+  <div class="db">
+    <div class="seg" id="libTabs" style="margin-bottom:8px"><button type="button" data-t="ex" aria-pressed="true">Examples</button><button type="button" data-t="mine" aria-pressed="false">My recipes</button></div>
+    <div id="libBody"></div>
+  </div>
+</dialog>
+
+<!-- Settings -->
+<dialog id="settingsDlg">
+  <div class="dh"><h2>Settings</h2><button class="ib" data-close type="button" aria-label="Close" data-ic="x"></button></div>
+  <div class="db">
+    <div class="row"><div class="tx"><b>Theme</b><span>Auto follows your device.</span></div>
+      <div class="seg" id="setTheme"><button type="button" data-v="auto">Auto</button><button type="button" data-v="light">Light</button><button type="button" data-v="dark">Dark</button></div></div>
+    <div class="row"><div class="tx"><b>Accent</b><span>Highlights, buttons and glow.</span></div>
+      <div class="swatches" id="setAccent">
+        <button type="button" data-v="gold" style="--s:#D9B65F" title="Gold" aria-label="Gold"></button>
+        <button type="button" data-v="emerald" style="--s:#4ADBA8" title="Emerald" aria-label="Emerald"></button>
+        <button type="button" data-v="sapphire" style="--s:#7C98FF" title="Sapphire" aria-label="Sapphire"></button>
+        <button type="button" data-v="rose" style="--s:#F07A9C" title="Rose" aria-label="Rose"></button>
+        <button type="button" data-v="amethyst" style="--s:#B596FF" title="Amethyst" aria-label="Amethyst"></button>
+      </div></div>
+    <div class="row"><div class="tx"><b>Text size</b><span id="fsLabel"></span></div><input type="range" id="setFs" min="12" max="20" step="1"></div>
+    <div class="row"><div class="tx"><b>Wrap long lines</b><span>In the input and output panes.</span></div><label class="sw"><input type="checkbox" id="setWrap"><i></i></label></div>
+    <div class="row"><div class="tx"><b>Show every step's output</b><span>Preview each step's result inside the recipe.</span></div><label class="sw"><input type="checkbox" id="setPeek"><i></i></label></div>
+    <div class="row"><div class="tx"><b>Auto bake</b><span>Run the recipe whenever something changes.</span></div><label class="sw"><input type="checkbox" id="setAuto"><i></i></label></div>
+    <div class="row"><div class="tx"><b>Include input in share links</b><span>Only for inputs under 3,000 characters.</span></div><label class="sw"><input type="checkbox" id="setShareIn"><i></i></label></div>
+    <div class="row"><div class="tx"><b>Reset settings</b><span>Your saved recipes are kept.</span></div><button class="btn" id="resetSet" type="button">Reset</button></div>
+  </div>
+</dialog>
+
+<!-- Help -->
+<dialog id="helpDlg">
+  <div class="dh"><h2>Shortcuts and tips</h2><button class="ib" data-close type="button" aria-label="Close" data-ic="x"></button></div>
+  <div class="db">
+    <div class="keys">
+      <span><kbd>Ctrl</kbd> <kbd>K</kbd></span><span>Open the command palette</span>
+      <span><kbd>Ctrl</kbd> <kbd>Enter</kbd></span><span>Bake the recipe</span>
+      <span><kbd>Alt</kbd> <kbd>Z</kbd></span><span>Undo a recipe change (add <kbd>Shift</kbd> to redo)</span>
+      <span><kbd>/</kbd></span><span>Search operations</span>
+      <span><kbd>?</kbd></span><span>Open this panel</span>
+      <span><kbd>↑</kbd> <kbd>↓</kbd></span><span>On a step's grip handle, reorder that step</span>
+    </div>
+    <p class="hint" style="margin-top:14px">Use the flag on a step to stop the recipe there, and the eye to preview that step's output. Magic works on the input or the output, and the Library keeps your own recipes on this device. Nothing you enter leaves your browser.</p>
+  </div>
+</dialog>
+
+<div id="toasts" role="status" aria-live="polite"></div>
+
+<!-- ============ ENGINE: every operation, no DOM needed ============ -->
+<script>
+(function (G) {
+'use strict';
+const enc = new TextEncoder(), dec = new TextDecoder();
+const T = b => dec.decode(b), B = s => enc.encode(s);
+const hx = b => Array.from(b, x => x.toString(16).padStart(2, '0'));
+const fail = m => { throw new Error(m); };
+const concat = (...a) => { const o = new Uint8Array(a.reduce((s, x) => s + x.length, 0)); let p = 0; for (const x of a) { o.set(x, p); p += x.length; } return o; };
+const rand = n => crypto.getRandomValues(new Uint8Array(n));
+const A = (n, t, d, o) => ({ n, t, d, o });
+const dig = async (algo, b) => new Uint8Array(await crypto.subtle.digest(algo, b));
+
+function hexParse(s, label) {
+  s = s.replace(/0x|\\x|[\s:,;-]/gi, '');
+  if (!/^[0-9a-f]*$/i.test(s)) fail((label || 'Hex') + ' contains characters that are not hex digits.');
+  if (s.length % 2) fail((label || 'Hex') + ' has an odd number of digits.');
+  return Uint8Array.from(s.match(/../g) || [], x => parseInt(x, 16));
+}
+async function stream(b, Ctor, fmt) {
+  const s = new Blob([b]).stream().pipeThrough(new Ctor(fmt));
+  return new Uint8Array(await new Response(s).arrayBuffer());
+}
+function toB64(b, urlsafe) {
+  let s = ''; for (let i = 0; i < b.length; i += 8192) s += String.fromCharCode.apply(null, b.subarray(i, i + 8192));
+  let r = btoa(s); if (urlsafe) r = r.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); return r;
+}
+function fromB64(str) {
+  let s = str.replace(/\s+/g, '').replace(/-/g, '+').replace(/_/g, '/');
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(s)) fail('Input is not valid Base64.');
+  while (s.length % 4) s += '=';
+  try { return Uint8Array.from(atob(s), c => c.charCodeAt(0)); } catch { return fail('Input is not valid Base64.'); }
+}
+const B32 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+function toB32(b) {
+  let bits = 0, v = 0, o = '';
+  for (const x of b) { v = (v << 8) | x; bits += 8; while (bits >= 5) { o += B32[(v >>> (bits - 5)) & 31]; bits -= 5; } v &= (1 << bits) - 1; }
+  if (bits > 0) o += B32[(v << (5 - bits)) & 31];
+  while (o.length % 8) o += '='; return o;
+}
+function fromB32(str) {
+  const s = str.replace(/[\s=]/g, '').toUpperCase(); let bits = 0, v = 0; const out = [];
+  for (const ch of s) { const i = B32.indexOf(ch); if (i < 0) fail('Input is not valid Base32.');
+    v = (v << 5) | i; bits += 5; if (bits >= 8) { out.push((v >>> (bits - 8)) & 255); bits -= 8; v &= (1 << bits) - 1; } }
+  return Uint8Array.from(out);
+}
+const B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+function toB58(b) {
+  let z = 0; while (z < b.length && b[z] === 0) z++;
+  let n = 0n; for (const x of b) n = (n << 8n) | BigInt(x);
+  let o = ''; while (n > 0n) { o = B58[Number(n % 58n)] + o; n /= 58n; }
+  return '1'.repeat(z) + o;
+}
+function fromB58(str) {
+  const s = str.trim(); let z = 0; while (z < s.length && s[z] === '1') z++;
+  let n = 0n; for (const ch of s) { const i = B58.indexOf(ch); if (i < 0) fail('Input is not valid Base58.'); n = n * 58n + BigInt(i); }
+  let h = n.toString(16); if (n === 0n) h = ''; if (h.length % 2) h = '0' + h;
+  return concat(new Uint8Array(z), Uint8Array.from(h.match(/../g) || [], x => parseInt(x, 16)));
+}
+function hexdump(b) {
+  const L = [];
+  for (let i = 0; i < b.length; i += 16) {
+    const c = b.subarray(i, i + 16), h = hx(c);
+    L.push(i.toString(16).padStart(8, '0') + '  ' + h.slice(0, 8).join(' ').padEnd(23) + '  ' + h.slice(8).join(' ').padEnd(23) + '  |' +
+      Array.from(c, x => x >= 32 && x < 127 ? String.fromCharCode(x) : '.').join('') + '|');
+  }
+  return L.join('\n');
+}
+function md5(bytes) {
+  const K = Array.from({ length: 64 }, (_, i) => Math.floor(Math.abs(Math.sin(i + 1)) * 2 ** 32) >>> 0);
+  const S = [7,12,17,22,5,9,14,20,4,11,16,23,6,10,15,21];
+  const len = bytes.length, n = (((len + 8) >>> 6) + 1) * 64;
+  const buf = new Uint8Array(n); buf.set(bytes); buf[len] = 0x80;
+  const v = new DataView(buf.buffer);
+  v.setUint32(n - 8, (len * 8) >>> 0, true); v.setUint32(n - 4, Math.floor(len / 2 ** 29), true);
+  let a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
+  for (let off = 0; off < n; off += 64) {
+    let a = a0, b = b0, c = c0, d = d0;
+    for (let i = 0; i < 64; i++) {
+      let F, g;
+      if (i < 16) { F = (b & c) | (~b & d); g = i; }
+      else if (i < 32) { F = (d & b) | (~d & c); g = (5 * i + 1) % 16; }
+      else if (i < 48) { F = b ^ c ^ d; g = (3 * i + 5) % 16; }
+      else { F = c ^ (b | ~d); g = (7 * i) % 16; }
+      F = (F + a + K[i] + v.getUint32(off + g * 4, true)) >>> 0;
+      a = d; d = c; c = b;
+      const s = S[(i >> 4) * 4 + (i % 4)];
+      b = (b + (((F << s) | (F >>> (32 - s))) >>> 0)) >>> 0;
+    }
+    a0 = (a0 + a) >>> 0; b0 = (b0 + b) >>> 0; c0 = (c0 + c) >>> 0; d0 = (d0 + d) >>> 0;
+  }
+  const o = new DataView(new ArrayBuffer(16));
+  [a0, b0, c0, d0].forEach((x, i) => o.setUint32(i * 4, x, true));
+  return hx(new Uint8Array(o.buffer)).join('');
+}
+let CRC = null;
+function crc32(b) {
+  if (!CRC) { CRC = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; CRC[n] = c >>> 0; } }
+  let c = 0xFFFFFFFF; for (const x of b) c = CRC[(c ^ x) & 255] ^ (c >>> 8);
+  return ((c ^ 0xFFFFFFFF) >>> 0).toString(16).padStart(8, '0');
+}
+function adler32(b) { let a = 1, s = 0; for (const x of b) { a = (a + x) % 65521; s = (s + a) % 65521; } return (((s << 16) | a) >>> 0).toString(16).padStart(8, '0'); }
+
+const rot = (s, k) => s.replace(/[a-z]/gi, ch => { const base = ch <= 'Z' ? 65 : 97; return String.fromCharCode(((ch.charCodeAt(0) - base + k) % 26 + 26) % 26 + base); });
+const words = s => s.split(/[^A-Za-z0-9]+|(?<=[a-z0-9])(?=[A-Z])/).filter(Boolean);
+const cap = w => w[0].toUpperCase() + w.slice(1).toLowerCase();
+const unesc = s => s.replace(/\\(?:u\{([0-9a-f]+)\}|u([0-9a-f]{4})|x([0-9a-f]{2})|([\s\S]))/gi, (m, u1, u2, x, c) => {
+  if (u1) return String.fromCodePoint(parseInt(u1, 16));
+  if (u2) return String.fromCharCode(parseInt(u2, 16));
+  if (x) return String.fromCharCode(parseInt(x, 16));
+  const map = { n: '\n', r: '\r', t: '\t', b: '\b', f: '\f', 0: '\0' }; return c in map ? map[c] : c; });
+const delim = s => s.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\r/g, '\r');
+const MORSE = { A:'.-',B:'-...',C:'-.-.',D:'-..',E:'.',F:'..-.',G:'--.',H:'....',I:'..',J:'.---',K:'-.-',L:'.-..',M:'--',N:'-.',O:'---',P:'.--.',Q:'--.-',R:'.-.',S:'...',T:'-',U:'..-',V:'...-',W:'.--',X:'-..-',Y:'-.--',Z:'--..',
+  0:'-----',1:'.----',2:'..---',3:'...--',4:'....-',5:'.....',6:'-....',7:'--...',8:'---..',9:'----.','.':'.-.-.-',',':'--..--','?':'..--..','!':'-.-.--','/':'-..-.' };
+const UNMORSE = Object.fromEntries(Object.entries(MORSE).map(([k, v]) => [v, k]));
+const DELIMS = { 'Space': ' ', 'Comma': ',', 'Line feed': '\n', 'None': '', '0x prefix': '0x', '\\x prefix': '\\x' };
+
+function railPos(len, n) {
+  const pat = []; let r = 0, d = 1;
+  for (let i = 0; i < len; i++) { pat.push(r); if (n > 1) { if (r === 0) d = 1; else if (r === n - 1) d = -1; r += d; } }
+  return [...Array(len).keys()].sort((a, b) => pat[a] - pat[b] || a - b);
+}
+function parseCSV(s) {
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (q) { if (c === '"') { if (s[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ',') { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && s[i + 1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
+    else f += c;
+  }
+  if (f !== '' || row.length) { row.push(f); rows.push(row); }
+  return rows;
+}
+const b64uBytes = s => fromB64(s);
+const pad2 = n => String(n).padStart(2, '0');
+
+/* ----- readability scoring, shared by Magic and the brute-force tools ----- */
+const COMMON = /\b(the|and|flag|http|https|password|hello|world|you|that|this|with|have|from|are|was|for|not|but|all|can|your|name|secret|message|meet|attack)\b/;
+function scoreBytes(b) {
+  if (!b.length) return -1;
+  const s = b.subarray(0, 2000); let pr = 0;
+  for (const x of s) if ((x >= 32 && x < 127) || x === 9 || x === 10 || x === 13) pr++;
+  pr /= s.length;
+  let t; try { t = new TextDecoder('utf-8', { fatal: true }).decode(s); } catch { return pr * 0.4; }
+  let score = pr; const low = t.toLowerCase(), letters = low.replace(/[^a-z]/g, '');
+  const odd = (t.match(/[^\p{L}\p{N}\s.,!?'"\-:;(){}\[\]_\/@#%&=+*<>]/gu) || []).length;
+  score -= 1.5 * (odd / Math.max(1, t.length));
+  if (letters.length > 3) score += ((letters.match(/[etaoinshr]/g) || []).length / letters.length);
+  if (COMMON.test(low)) score += 1;
+  try { const j = JSON.parse(t); if (j && typeof j === 'object') score += 0.6; } catch {}
+  return score;
+}
+function entropy(b) {
+  if (!b.length) return 0; const f = new Array(256).fill(0); const n = Math.min(b.length, 200000);
+  for (let i = 0; i < n; i++) f[b[i]]++;
+  return f.reduce((h, c) => c ? h - (c / n) * Math.log2(c / n) : h, 0);
+}
+
+const hashOp = (n, algo, info) => ({ n, c: 'Hashing', i: info, a: [], f: async b => B(hx(await dig(algo, b)).join('')) });
+const extractOp = (n, re, info) => ({ n, c: 'Extract', i: info, a: [], f: b => B((T(b).match(re) || []).join('\n')) });
+const kdf = async (pass, salt, iter, usage) => {
+  const km = await crypto.subtle.importKey('raw', B(pass), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: iter, hash: 'SHA-256' }, km, { name: 'AES-GCM', length: 256 }, false, usage);
+};
+const iters = v => Math.min(2000000, Math.max(1000, Number(v) || 100000));
+const aesKey = (hex, usage) => { const k = hexParse(hex, 'Key'); if (k.length !== 16 && k.length !== 32) fail('Key must be 16 or 32 bytes (32 or 64 hex digits).'); return crypto.subtle.importKey('raw', k, 'AES-CBC', false, [usage]); };
+const ivOf = hex => { const iv = hexParse(hex, 'IV'); if (iv.length !== 16) fail('IV must be 16 bytes (32 hex digits).'); return iv; };
+const pick = max => { const lim = Math.floor(256 / max) * max; for (;;) { const x = rand(1)[0]; if (x < lim) return x % max; } };
+const SETS = { 'Letters and digits': 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789', 'Letters, digits and symbols': 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+[]{};:,.?', 'Digits': '0123456789', 'Hex': '0123456789abcdef' };
+
+const OPS = [
+  /* ---------- Encoding ---------- */
+  { n: 'To Base64', c: 'Encoding', i: 'Encode bytes as Base64.', a: [A('Alphabet', 'select', 'Standard', ['Standard', 'URL-safe'])], f: (b, [al]) => B(toB64(b, al === 'URL-safe')) },
+  { n: 'From Base64', c: 'Encoding', i: 'Decode standard or URL-safe Base64.', a: [], f: b => fromB64(T(b)) },
+  { n: 'To Base32', c: 'Encoding', i: 'Encode bytes as Base32 (RFC 4648).', a: [], f: b => B(toB32(b)) },
+  { n: 'From Base32', c: 'Encoding', i: 'Decode Base32.', a: [], f: b => fromB32(T(b)) },
+  { n: 'To Base58', c: 'Encoding', i: 'Encode bytes as Base58 (Bitcoin alphabet).', a: [], f: b => B(toB58(b)) },
+  { n: 'From Base58', c: 'Encoding', i: 'Decode Base58 (Bitcoin alphabet).', a: [], f: b => fromB58(T(b)) },
+  { n: 'To Hex', c: 'Encoding', i: 'Write each byte as two hex digits.', a: [A('Delimiter', 'select', 'Space', Object.keys(DELIMS))],
+    f: (b, [d]) => { const h = hx(b), p = DELIMS[d]; return B(d === '0x prefix' || d === '\\x prefix' ? h.map(x => p + x).join('') : h.join(p)); } },
+  { n: 'From Hex', c: 'Encoding', i: 'Read hex digits as bytes. Prefixes and separators are ignored.', a: [], f: b => hexParse(T(b)) },
+  { n: 'To Hex dump', c: 'Encoding', i: 'Classic offset, hex and ASCII dump.', a: [], f: b => B(hexdump(b)) },
+  { n: 'To Binary', c: 'Encoding', i: 'Write each byte as 8 binary digits.', a: [], f: b => B(Array.from(b, x => x.toString(2).padStart(8, '0')).join(' ')) },
+  { n: 'From Binary', c: 'Encoding', i: 'Read groups of 8 binary digits as bytes.', a: [],
+    f: b => { const s = T(b); if (/[^01\s]/.test(s)) fail('Input contains characters other than 0, 1 and spaces.'); return Uint8Array.from((s.replace(/\s/g, '').match(/.{1,8}/g)) || [], x => parseInt(x, 2)); } },
+  { n: 'To Octal', c: 'Encoding', i: 'Write each byte in octal.', a: [], f: b => B(Array.from(b, x => x.toString(8).padStart(3, '0')).join(' ')) },
+  { n: 'From Octal', c: 'Encoding', i: 'Read octal numbers as bytes.', a: [],
+    f: b => { const s = T(b); if (/[^0-7\s,]/.test(s)) fail('Input contains characters other than octal digits.'); return Uint8Array.from((s.match(/[0-7]+/g) || []).map(x => { const n = parseInt(x, 8); if (n > 255) fail('An octal value is larger than 255.'); return n; })); } },
+  { n: 'To Decimal', c: 'Encoding', i: 'Write each byte as a decimal number.', a: [A('Delimiter', 'select', 'Space', ['Space', 'Comma', 'Line feed'])], f: (b, [d]) => B(Array.from(b).join(DELIMS[d])) },
+  { n: 'From Decimal', c: 'Encoding', i: 'Read decimal numbers (0 to 255) as bytes.', a: [],
+    f: b => { const s = T(b); if (/[^\d\s,;]/.test(s)) fail('Input contains characters other than digits and separators.'); return Uint8Array.from((s.match(/\d+/g) || []).map(x => { const n = Number(x); if (n > 255) fail('A value is larger than 255.'); return n; })); } },
+  { n: 'URL Encode', c: 'Encoding', i: 'Percent-encode text.', a: [A('Encode every character', 'bool', false)],
+    f: (b, [all]) => B(all ? Array.from(b, x => '%' + x.toString(16).padStart(2, '0')).join('') : encodeURIComponent(T(b))) },
+  { n: 'URL Decode', c: 'Encoding', i: 'Decode percent-encoded text.', a: [], f: b => { try { return B(decodeURIComponent(T(b))); } catch { return fail('Input contains an invalid % sequence.'); } } },
+  { n: 'HTML Entity Encode', c: 'Encoding', i: 'Escape &, <, >, quotes and non-ASCII characters.', a: [], f: b => B(T(b).replace(/[&<>"']|[^\x00-\x7f]/gu, ch => '&#x' + ch.codePointAt(0).toString(16) + ';')) },
+  { n: 'HTML Entity Decode', c: 'Encoding', i: 'Decode named and numeric HTML entities.', a: [],
+    f: b => { if (typeof document === 'undefined') return b; const t = document.createElement('textarea'); t.innerHTML = T(b); return B(t.value); } },
+  { n: 'Unicode escape', c: 'Encoding', i: 'Write non-ASCII characters as \\uXXXX.', a: [], f: b => B(T(b).replace(/[^\x00-\x7f]/g, ch => '\\u' + ch.charCodeAt(0).toString(16).padStart(4, '0'))) },
+  { n: 'Escape string', c: 'Encoding', i: 'Escape quotes, backslashes and control characters.', a: [], f: b => B(JSON.stringify(T(b)).slice(1, -1)) },
+  { n: 'Unescape string', c: 'Encoding', i: 'Resolve \\n, \\t, \\xHH and \\uXXXX escapes.', a: [], f: b => B(unesc(T(b))) },
+  { n: 'To Morse Code', c: 'Encoding', i: 'Letters and digits to dots and dashes.', a: [], f: b => B(T(b).toUpperCase().split(/\s+/).map(w => Array.from(w).map(c => MORSE[c] || '').filter(Boolean).join(' ')).join(' / ')) },
+  { n: 'From Morse Code', c: 'Encoding', i: 'Dots and dashes to text. Use / between words.', a: [],
+    f: b => { const s = T(b).trim(); if (/[^.\-\s/]/.test(s)) fail('Input contains characters other than dots, dashes and spaces.'); return B(s.split(/\s*\/\s*/).map(w => w.split(/\s+/).filter(Boolean).map(c => UNMORSE[c] || fail(`"${c}" is not a known Morse sequence.`)).join('')).join(' ')); } },
+
+  /* ---------- Hashing ---------- */
+  { n: 'MD5', c: 'Hashing', i: 'MD5 digest. Not secure; useful for checksums.', a: [], f: b => B(md5(b)) },
+  hashOp('SHA-1', 'SHA-1', 'SHA-1 digest.'), hashOp('SHA-256', 'SHA-256', 'SHA-256 digest.'), hashOp('SHA-384', 'SHA-384', 'SHA-384 digest.'), hashOp('SHA-512', 'SHA-512', 'SHA-512 digest.'),
+  { n: 'CRC32', c: 'Hashing', i: 'CRC-32 checksum.', a: [], f: b => B(crc32(b)) },
+  { n: 'Adler-32', c: 'Hashing', i: 'Adler-32 checksum.', a: [], f: b => B(adler32(b)) },
+  { n: 'HMAC', c: 'Hashing', i: 'Keyed hash. Output is hex.', a: [A('Key', 'text', 'secret'), A('Key format', 'select', 'UTF-8', ['UTF-8', 'Hex']), A('Hash', 'select', 'SHA-256', ['SHA-1', 'SHA-256', 'SHA-384', 'SHA-512'])],
+    f: async (b, [key, fmt, h]) => { const k = fmt === 'Hex' ? hexParse(key, 'Key') : B(key); const ck = await crypto.subtle.importKey('raw', k, { name: 'HMAC', hash: h }, false, ['sign']); return B(hx(new Uint8Array(await crypto.subtle.sign('HMAC', ck, b))).join('')); } },
+  { n: 'Multi-hash', c: 'Hashing', i: 'MD5, SHA family and CRC32 in one list.', a: [],
+    f: async b => B([['MD5', md5(b)], ['SHA-1', hx(await dig('SHA-1', b)).join('')], ['SHA-256', hx(await dig('SHA-256', b)).join('')], ['SHA-384', hx(await dig('SHA-384', b)).join('')], ['SHA-512', hx(await dig('SHA-512', b)).join('')], ['CRC32', crc32(b)]].map(([k, v]) => k.padEnd(8) + v).join('\n')) },
+
+  /* ---------- Crypto ---------- */
+  { n: 'AES-GCM Encrypt', c: 'Crypto', i: 'Password-based. PBKDF2-SHA256 key, random salt and IV. Output is salt, IV, then ciphertext; a different result each time.',
+    a: [A('Password', 'text', 'correct horse'), A('PBKDF2 iterations', 'number', 100000)],
+    f: async (b, [pw, it]) => { if (!pw) fail('Password is empty.'); const salt = rand(16), iv = rand(12); const k = await kdf(pw, salt, iters(it), ['encrypt']);
+      return concat(salt, iv, new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, k, b))); } },
+  { n: 'AES-GCM Decrypt', c: 'Crypto', i: 'Reverses AES-GCM Encrypt. Input is salt, IV, then ciphertext as raw bytes.',
+    a: [A('Password', 'text', 'correct horse'), A('PBKDF2 iterations', 'number', 100000)],
+    f: async (b, [pw, it]) => { if (b.length < 44) fail('Input is too short. Expected salt, IV and ciphertext as raw bytes.');
+      const k = await kdf(pw, b.subarray(0, 16), iters(it), ['decrypt']);
+      try { return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b.subarray(16, 28) }, k, b.subarray(28))); } catch { return fail('Decryption failed. The password is wrong or the data was changed.'); } } },
+  { n: 'AES-CBC Encrypt', c: 'Crypto', i: 'Raw key and IV in hex. PKCS#7 padding.', a: [A('Key (hex)', 'text', ''), A('IV (hex)', 'text', '')],
+    f: async (b, [k, iv]) => new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-CBC', iv: ivOf(iv) }, await aesKey(k, 'encrypt'), b)) },
+  { n: 'AES-CBC Decrypt', c: 'Crypto', i: 'Raw key and IV in hex. PKCS#7 padding.', a: [A('Key (hex)', 'text', ''), A('IV (hex)', 'text', '')],
+    f: async (b, [k, iv]) => { const key = await aesKey(k, 'decrypt'); try { return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-CBC', iv: ivOf(iv) }, key, b)); } catch { return fail('Decryption failed. Check the key, IV and padding.'); } } },
+  { n: 'PBKDF2 derive key', c: 'Crypto', i: 'Derive a key from a password. Input is the password; output is hex.',
+    a: [A('Salt', 'text', 'salt'), A('Iterations', 'number', 100000), A('Hash', 'select', 'SHA-256', ['SHA-1', 'SHA-256', 'SHA-512']), A('Key length (bytes)', 'number', 32)],
+    f: async (b, [salt, it, h, len]) => { const km = await crypto.subtle.importKey('raw', b, 'PBKDF2', false, ['deriveBits']);
+      return B(hx(new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: B(salt), iterations: iters(it), hash: h }, km, Math.min(128, Math.max(1, Number(len) || 32)) * 8))).join('')); } },
+
+  /* ---------- Ciphers ---------- */
+  { n: 'ROT13 / Caesar shift', c: 'Ciphers', i: 'Rotate letters by a fixed amount.', a: [A('Shift', 'number', 13)], f: (b, [k]) => B(rot(T(b), Number(k) || 0)) },
+  { n: 'Caesar brute force', c: 'Ciphers', i: 'Show all 25 shifts.', a: [], f: b => { const s = T(b); return B(Array.from({ length: 25 }, (_, i) => `${String(i + 1).padStart(2)}: ${rot(s, i + 1)}`).join('\n')); } },
+  { n: 'ROT47', c: 'Ciphers', i: 'Rotate printable ASCII by 47.', a: [], f: b => B(T(b).replace(/[!-~]/g, c => String.fromCharCode(33 + (c.charCodeAt(0) - 33 + 47) % 94))) },
+  { n: 'Atbash', c: 'Ciphers', i: 'Reverse the alphabet.', a: [], f: b => B(T(b).replace(/[a-z]/gi, ch => { const base = ch <= 'Z' ? 65 : 97; return String.fromCharCode(base + 25 - (ch.charCodeAt(0) - base)); })) },
+  { n: 'Vigenère', c: 'Ciphers', i: 'Keyed polyalphabetic cipher.', a: [A('Key (letters)', 'text', 'KEY'), A('Mode', 'select', 'Encode', ['Encode', 'Decode'])],
+    f: (b, [key, mode]) => { const k = key.toUpperCase().replace(/[^A-Z]/g, ''); if (!k) fail('Key must contain letters.'); let i = 0;
+      return B(T(b).replace(/[a-z]/gi, ch => { const base = ch <= 'Z' ? 65 : 97, s = k.charCodeAt(i++ % k.length) - 65; return String.fromCharCode((ch.charCodeAt(0) - base + (mode === 'Encode' ? s : 26 - s)) % 26 + base); })); } },
+  { n: 'Rail fence', c: 'Ciphers', i: 'Zig-zag transposition cipher.', a: [A('Rails', 'number', 3), A('Mode', 'select', 'Encode', ['Encode', 'Decode'])],
+    f: (b, [n, mode]) => { n = Math.floor(Number(n)); if (!(n >= 2)) fail('Use at least 2 rails.'); const ch = Array.from(T(b)), pos = railPos(ch.length, n);
+      if (mode === 'Encode') return B(pos.map(i => ch[i]).join('')); const out = []; pos.forEach((p, k) => out[p] = ch[k]); return B(out.join('')); } },
+  { n: 'XOR', c: 'Ciphers', i: 'XOR every byte with a repeating key.', a: [A('Key', 'text', 'key'), A('Key format', 'select', 'UTF-8', ['UTF-8', 'Hex'])],
+    f: (b, [key, fmt]) => { const k = fmt === 'Hex' ? hexParse(key, 'Key') : B(key); if (!k.length) fail('Key is empty.'); return b.map((x, i) => x ^ k[i % k.length]); } },
+  { n: 'XOR brute force', c: 'Ciphers', i: 'Try all 256 single-byte keys and list the most readable.', a: [],
+    f: b => { const s = b.subarray(0, 512), res = []; for (let k = 0; k < 256; k++) { const t = s.map(x => x ^ k); res.push({ k, sc: scoreBytes(t), t }); }
+      res.sort((x, y) => y.sc - x.sc); return B(res.slice(0, 8).map(r => `Key 0x${r.k.toString(16).padStart(2, '0')} (${r.k}): ${T(r.t).replace(/[^\x20-\x7e]/g, '.').slice(0, 100)}`).join('\n')); } },
+
+  /* ---------- Text ---------- */
+  { n: 'To Upper case', c: 'Text', i: 'Uppercase everything.', a: [], f: b => B(T(b).toUpperCase()) },
+  { n: 'To Lower case', c: 'Text', i: 'Lowercase everything.', a: [], f: b => B(T(b).toLowerCase()) },
+  { n: 'To Title Case', c: 'Text', i: 'Capitalise each word.', a: [], f: b => B(T(b).replace(/\p{L}[\p{L}\p{N}']*/gu, w => w[0].toUpperCase() + w.slice(1).toLowerCase())) },
+  { n: 'To camelCase', c: 'Text', i: 'joinWordsLikeThis.', a: [], f: b => B(words(T(b)).map((w, i) => i ? cap(w) : w.toLowerCase()).join('')) },
+  { n: 'To snake_case', c: 'Text', i: 'join_words_like_this.', a: [], f: b => B(words(T(b)).map(w => w.toLowerCase()).join('_')) },
+  { n: 'To kebab-case', c: 'Text', i: 'join-words-like-this.', a: [], f: b => B(words(T(b)).map(w => w.toLowerCase()).join('-')) },
+  { n: 'Reverse', c: 'Text', i: 'Reverse characters, lines or bytes.', a: [A('By', 'select', 'Character', ['Character', 'Line', 'Byte'])],
+    f: (b, [m]) => m === 'Byte' ? b.slice().reverse() : B(m === 'Line' ? T(b).split('\n').reverse().join('\n') : Array.from(T(b)).reverse().join('')) },
+  { n: 'Remove whitespace', c: 'Text', i: 'Delete every space, tab and line break.', a: [], f: b => B(T(b).replace(/\s+/g, '')) },
+  { n: 'Trim lines', c: 'Text', i: 'Trim each line and drop empty ones.', a: [], f: b => B(T(b).split('\n').map(l => l.trim()).filter(Boolean).join('\n')) },
+  { n: 'Find / Replace', c: 'Text', i: 'Regular expression replace.', a: [A('Find (regex)', 'text', ''), A('Replace with', 'text', ''), A('Flags', 'text', 'g')],
+    f: (b, [find, rep, fl]) => { try { return B(T(b).replace(new RegExp(find, fl), rep)); } catch (e) { return fail('Bad regular expression: ' + e.message); } } },
+  { n: 'Split and join', c: 'Text', i: 'Split on one delimiter and join with another. Use \\n for a line break.', a: [A('Split on', 'text', ','), A('Join with', 'text', '\\n')],
+    f: (b, [s, j]) => B(T(b).split(delim(s)).join(delim(j))) },
+  { n: 'Sort lines', c: 'Text', i: 'Sort alphabetically or numerically.', a: [A('Order', 'select', 'A to Z', ['A to Z', 'Z to A', 'Numeric'])],
+    f: (b, [o]) => { const l = T(b).split('\n'); l.sort(o === 'Numeric' ? (x, y) => parseFloat(x) - parseFloat(y) : undefined); if (o === 'Z to A') l.reverse(); return B(l.join('\n')); } },
+  { n: 'Unique lines', c: 'Text', i: 'Remove duplicate lines, keeping order.', a: [], f: b => B([...new Set(T(b).split('\n'))].join('\n')) },
+  { n: 'Head / Tail', c: 'Text', i: 'Keep the first or last lines.', a: [A('Keep', 'select', 'First', ['First', 'Last']), A('Lines', 'number', 10)],
+    f: (b, [m, n]) => { const l = T(b).split('\n'), k = Math.max(0, Math.floor(Number(n)) || 0); return B((m === 'First' ? l.slice(0, k) : l.slice(Math.max(0, l.length - k))).join('\n')); } },
+  { n: 'Add line numbers', c: 'Text', i: 'Prefix each line with its number.', a: [], f: b => { const l = T(b).split('\n'), w = String(l.length).length; return B(l.map((x, i) => String(i + 1).padStart(w) + '  ' + x).join('\n')); } },
+  { n: 'Remove line numbers', c: 'Text', i: 'Strip leading numbers from each line.', a: [], f: b => B(T(b).replace(/^\s*\d+[.):\-\s]\s?/gm, '')) },
+  { n: 'Strip HTML tags', c: 'Text', i: 'Remove tags, scripts and styles.', a: [], f: b => B(T(b).replace(/<(script|style)[\s\S]*?<\/\1>/gi, '').replace(/<[^>]*>/g, '')) },
+  { n: 'Defang URL', c: 'Text', i: 'Make links and hosts safe to share.', a: [], f: b => B(T(b).replace(/\./g, '[.]').replace(/http/gi, m => m[0] + 'xx' + m.slice(3)).replace(/:\/\//g, '[://]')) },
+  { n: 'Fang URL', c: 'Text', i: 'Undo Defang URL.', a: [], f: b => B(T(b).replace(/\[\.\]/g, '.').replace(/\[:\/\/\]/g, '://').replace(/hxxp/gi, m => 'http')) },
+  { n: 'Text statistics', c: 'Text', i: 'Characters, words, lines and bytes.', a: [],
+    f: b => { const s = T(b); return B(`Characters: ${Array.from(s).length}\nWords: ${(s.trim().match(/\S+/g) || []).length}\nLines: ${s ? s.split('\n').length : 0}\nBytes: ${b.length}`); } },
+  { n: 'Character frequency', c: 'Text', i: 'Most common characters.', a: [],
+    f: b => { const m = new Map(), s = Array.from(T(b)); s.forEach(c => m.set(c, (m.get(c) || 0) + 1));
+      return B([...m].sort((x, y) => y[1] - x[1]).slice(0, 30).map(([c, n]) => `${JSON.stringify(c).padEnd(8)} ${String(n).padStart(6)}  ${(100 * n / s.length).toFixed(1)}%`).join('\n')); } },
+  { n: 'Word frequency', c: 'Text', i: 'Most common words.', a: [],
+    f: b => { const m = new Map(); (T(b).toLowerCase().match(/[\p{L}\p{N}']+/gu) || []).forEach(w => m.set(w, (m.get(w) || 0) + 1)); return B([...m].sort((x, y) => y[1] - x[1]).slice(0, 30).map(([w, n]) => `${String(n).padStart(5)}  ${w}`).join('\n')); } },
+  { n: 'Shannon entropy', c: 'Text', i: 'Randomness in bits per byte. Encrypted or compressed data is near 8.', a: [], f: b => B(entropy(b).toFixed(4) + ' bits per byte') },
+
+  /* ---------- Extract ---------- */
+  extractOp('Extract URLs', /https?:\/\/[^\s"'<>]+/gi, 'List every http or https link.'),
+  extractOp('Extract IPv4 addresses', /\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b/g, 'List IPv4 addresses.'),
+  extractOp('Extract email addresses', /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, 'List email addresses.'),
+  extractOp('Extract domains', /\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}\b/gi, 'List host names.'),
+  { n: 'Extract strings', c: 'Extract', i: 'Printable text runs inside binary data.', a: [A('Minimum length', 'number', 4)],
+    f: (b, [m]) => { m = Math.max(1, Number(m) || 4); const out = []; let cur = ''; for (const x of b) { if (x >= 32 && x < 127) cur += String.fromCharCode(x); else { if (cur.length >= m) out.push(cur); cur = ''; } } if (cur.length >= m) out.push(cur); return B(out.join('\n')); } },
+  { n: 'Regex matches', c: 'Extract', i: 'List every match of a pattern.', a: [A('Pattern', 'text', ''), A('Flags', 'text', 'g')],
+    f: (b, [p, fl]) => { try { return B((T(b).match(new RegExp(p, fl.includes('g') ? fl : fl + 'g')) || []).join('\n')); } catch (e) { return fail('Bad regular expression: ' + e.message); } } },
+
+  /* ---------- Data ---------- */
+  { n: 'JSON beautify', c: 'Data', i: 'Pretty-print JSON.', a: [A('Indent', 'number', 2), A('Sort keys', 'bool', false)],
+    f: (b, [n, sort]) => { try { let j = JSON.parse(T(b)); if (sort) { const s = v => Array.isArray(v) ? v.map(s) : v && typeof v === 'object' ? Object.fromEntries(Object.keys(v).sort().map(k => [k, s(v[k])])) : v; j = s(j); } return B(JSON.stringify(j, null, Number(n) || 2)); } catch (e) { return fail('Invalid JSON: ' + e.message); } } },
+  { n: 'JSON minify', c: 'Data', i: 'Remove whitespace from JSON.', a: [], f: b => { try { return B(JSON.stringify(JSON.parse(T(b)))); } catch (e) { return fail('Invalid JSON: ' + e.message); } } },
+  { n: 'JSON get path', c: 'Data', i: 'Pick a value, such as user.items[0].name.', a: [A('Path', 'text', '')],
+    f: (b, [p]) => { let v; try { v = JSON.parse(T(b)); } catch (e) { return fail('Invalid JSON: ' + e.message); }
+      for (const k of p.replace(/\[(\d+)\]/g, '.$1').split('.').filter(Boolean)) { if (v == null || !(k in Object(v))) fail(`Path not found at "${k}".`); v = v[k]; }
+      return B(typeof v === 'string' ? v : JSON.stringify(v, null, 2)); } },
+  { n: 'JSON to CSV', c: 'Data', i: 'Array of objects to CSV.', a: [],
+    f: b => { let j; try { j = JSON.parse(T(b)); } catch (e) { return fail('Invalid JSON: ' + e.message); } if (!Array.isArray(j)) fail('Expected a JSON array.');
+      const cols = [...new Set(j.flatMap(r => r && typeof r === 'object' ? Object.keys(r) : []))]; const cell = v => { const s = v == null ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+      return B([cols.map(cell).join(','), ...j.map(r => cols.map(c => cell(r && r[c])).join(','))].join('\n')); } },
+  { n: 'CSV to JSON', c: 'Data', i: 'CSV rows to a JSON array.', a: [A('First row is a header', 'bool', true)],
+    f: (b, [h]) => { const rows = parseCSV(T(b)); if (!rows.length) return B('[]'); if (!h) return B(JSON.stringify(rows, null, 2)); const [head, ...rest] = rows; return B(JSON.stringify(rest.map(r => Object.fromEntries(head.map((k, i) => [k, r[i] ?? '']))), null, 2)); } },
+  { n: 'Parse JWT', c: 'Data', i: 'Decode a JSON Web Token without verifying it.', a: [],
+    f: b => { const p = T(b).trim().split('.'); if (p.length < 2) fail('Not a JWT. Expected header.payload.signature.'); let h, pl;
+      try { h = JSON.parse(T(b64uBytes(p[0]))); pl = JSON.parse(T(b64uBytes(p[1]))); } catch { return fail('The header or payload is not Base64url-encoded JSON.'); }
+      const tm = ['iat', 'exp', 'nbf'].filter(k => typeof pl[k] === 'number').map(k => `${k}: ${new Date(pl[k] * 1000).toISOString()}`);
+      return B('Header\n' + JSON.stringify(h, null, 2) + '\n\nPayload\n' + JSON.stringify(pl, null, 2) + (tm.length ? '\n\nTimes (UTC)\n' + tm.join('\n') : '') + '\n\nSignature (Base64url)\n' + (p[2] || '(none)')); } },
+  { n: 'Parse URL', c: 'Data', i: 'Break a URL into its parts.', a: [],
+    f: b => { let u; try { u = new URL(T(b).trim()); } catch { return fail('Input is not a complete URL.'); }
+      const o = [['Protocol', u.protocol], ['Host', u.host], ['Hostname', u.hostname], ['Port', u.port || '(default)'], ['Path', u.pathname], ['Query', u.search || '(none)'], ['Fragment', u.hash || '(none)'], ['Username', u.username || '(none)']].map(([k, v]) => k.padEnd(9) + v);
+      const q = [...u.searchParams]; if (q.length) o.push('', 'Query parameters', ...q.map(([k, v]) => `  ${k} = ${v}`)); return B(o.join('\n')); } },
+  { n: 'Gzip', c: 'Data', i: 'Compress with gzip.', a: [], f: b => stream(b, CompressionStream, 'gzip') },
+  { n: 'Gunzip', c: 'Data', i: 'Decompress gzip.', a: [], f: async b => { try { return await stream(b, DecompressionStream, 'gzip'); } catch { return fail('Input is not valid gzip data.'); } } },
+  { n: 'Zlib deflate', c: 'Data', i: 'Compress with zlib.', a: [], f: b => stream(b, CompressionStream, 'deflate') },
+  { n: 'Zlib inflate', c: 'Data', i: 'Decompress zlib.', a: [], f: async b => { try { return await stream(b, DecompressionStream, 'deflate'); } catch { return fail('Input is not valid zlib data.'); } } },
+  { n: 'Raw deflate', c: 'Data', i: 'Compress without a header.', a: [], f: b => stream(b, CompressionStream, 'deflate-raw') },
+  { n: 'Raw inflate', c: 'Data', i: 'Decompress raw deflate.', a: [], f: async b => { try { return await stream(b, DecompressionStream, 'deflate-raw'); } catch { return fail('Input is not valid raw deflate data.'); } } },
+  { n: 'Unix timestamp to date', c: 'Data', i: 'Seconds or milliseconds to an ISO date.', a: [A('Unit', 'select', 'Seconds', ['Seconds', 'Milliseconds'])],
+    f: (b, [u]) => { const n = Number(T(b).trim()); if (!Number.isFinite(n)) fail('Input is not a number.'); const d = new Date(n * (u === 'Seconds' ? 1000 : 1)); if (isNaN(d)) fail('That number is outside the supported date range.'); return B(d.toISOString()); } },
+  { n: 'Date to Unix timestamp', c: 'Data', i: 'Parse a date and give its timestamp.', a: [A('Unit', 'select', 'Seconds', ['Seconds', 'Milliseconds'])],
+    f: (b, [u]) => { const ms = Date.parse(T(b).trim()); if (isNaN(ms)) fail('Could not understand that date.'); return B(String(u === 'Seconds' ? Math.floor(ms / 1000) : ms)); } },
+
+  /* ---------- Numbers ---------- */
+  { n: 'Convert base', c: 'Numbers', i: 'Convert whitespace-separated integers between bases 2 to 36.', a: [A('From base', 'number', 16), A('To base', 'number', 10)],
+    f: (b, [from, to]) => { from = Number(from); to = Number(to); if (!(from >= 2 && from <= 36 && to >= 2 && to <= 36)) fail('Bases must be between 2 and 36.');
+      return B(T(b).trim().split(/\s+/).filter(Boolean).map(tok => { let t = tok.toLowerCase(); if ((from === 16 && t.startsWith('0x')) || (from === 2 && t.startsWith('0b')) || (from === 8 && t.startsWith('0o'))) t = t.slice(2);
+        let v = 0n; const bf = BigInt(from); for (const ch of t) { const d = parseInt(ch, 36); if (Number.isNaN(d) || d >= from) fail(`"${tok}" is not a valid base ${from} number.`); v = v * bf + BigInt(d); } return v.toString(to); }).join('\n')); } },
+  { n: 'IPv4 to integer', c: 'Numbers', i: 'Dotted address to a 32-bit number.', a: [],
+    f: b => B(T(b).trim().split('\n').map(l => { const p = l.trim().split('.').map(Number); if (p.length !== 4 || p.some(x => !(x >= 0 && x <= 255))) fail(`"${l.trim()}" is not an IPv4 address.`); return String(((p[0] * 256 + p[1]) * 256 + p[2]) * 256 + p[3]); }).join('\n')) },
+  { n: 'Integer to IPv4', c: 'Numbers', i: '32-bit number to a dotted address.', a: [],
+    f: b => B(T(b).trim().split('\n').map(l => { const n = Number(l.trim()); if (!Number.isInteger(n) || n < 0 || n > 4294967295) fail(`"${l.trim()}" is not a 32-bit integer.`); return [n >>> 24, (n >>> 16) & 255, (n >>> 8) & 255, n & 255].join('.'); }).join('\n')) },
+  { n: 'Luhn check', c: 'Numbers', i: 'Validate card-style numbers.', a: [],
+    f: b => { const d = T(b).replace(/[\s-]/g, ''); if (!/^\d+$/.test(d)) fail('Input must contain only digits, spaces and dashes.'); let s = 0, alt = false; for (let i = d.length - 1; i >= 0; i--) { let n = +d[i]; if (alt) { n *= 2; if (n > 9) n -= 9; } s += n; alt = !alt; } return B(s % 10 === 0 ? 'Valid' : 'Invalid'); } },
+  { n: 'Swap endianness', c: 'Numbers', i: 'Reverse the bytes in each word.', a: [A('Word length (bytes)', 'select', '4', ['2', '4', '8'])],
+    f: (b, [w]) => { w = Number(w); const n = Math.ceil(b.length / w) * w, o = new Uint8Array(n); o.set(b); for (let i = 0; i < n; i += w) o.subarray(i, i + w).reverse(); return o; } },
+
+  /* ---------- Generate (ignore the input) ---------- */
+  { n: 'UUID v4', c: 'Generate', i: 'Random identifiers. Ignores the input.', a: [A('Count', 'number', 1)],
+    f: (b, [n]) => B(Array.from({ length: Math.min(500, Math.max(1, Number(n) || 1)) }, () => { const u = rand(16); u[6] = (u[6] & 15) | 64; u[8] = (u[8] & 63) | 128; const h = hx(u).join(''); return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`; }).join('\n')) },
+  { n: 'Random bytes', c: 'Generate', i: 'Secure random bytes. Ignores the input.', a: [A('Count', 'number', 16), A('Output', 'select', 'Hex', ['Hex', 'Raw'])],
+    f: (b, [n, o]) => { const r = rand(Math.min(65536, Math.max(1, Number(n) || 16))); return o === 'Hex' ? B(hx(r).join('')) : r; } },
+  { n: 'Password', c: 'Generate', i: 'Random passwords. Ignores the input.', a: [A('Length', 'number', 20), A('Characters', 'select', 'Letters and digits', Object.keys(SETS)), A('Count', 'number', 5)],
+    f: (b, [len, set, n]) => { const cs = SETS[set]; return B(Array.from({ length: Math.min(100, Math.max(1, Number(n) || 1)) }, () => Array.from({ length: Math.min(256, Math.max(4, Number(len) || 20)) }, () => cs[pick(cs.length)]).join('')).join('\n')); } },
+];
+const OPMAP = Object.fromEntries(OPS.map(o => [o.n, o]));
+const CATS = [...new Set(OPS.map(o => o.c))];
+
+/* ---------- file type sniffing ---------- */
+const SIGS = [['PNG image', [0x89, 0x50, 0x4e, 0x47]], ['JPEG image', [0xff, 0xd8, 0xff]], ['GIF image', [0x47, 0x49, 0x46, 0x38]], ['PDF document', [0x25, 0x50, 0x44, 0x46]],
+  ['ZIP archive', [0x50, 0x4b, 3, 4]], ['gzip data', [0x1f, 0x8b]], ['7-Zip archive', [0x37, 0x7a, 0xbc, 0xaf]], ['RAR archive', [0x52, 0x61, 0x72, 0x21]], ['bzip2 data', [0x42, 0x5a, 0x68]],
+  ['xz data', [0xfd, 0x37, 0x7a, 0x58, 0x5a]], ['ELF binary', [0x7f, 0x45, 0x4c, 0x46]], ['Windows executable', [0x4d, 0x5a]], ['SQLite database', [0x53, 0x51, 0x4c, 0x69, 0x74, 0x65]],
+  ['WebAssembly', [0, 0x61, 0x73, 0x6d]], ['Java class', [0xca, 0xfe, 0xba, 0xbe]], ['MP3 audio', [0x49, 0x44, 0x33]], ['Ogg media', [0x4f, 0x67, 0x67, 0x53]], ['BMP image', [0x42, 0x4d]],
+  ['zlib data', [0x78, 0x9c]], ['zlib data', [0x78, 0x01]], ['zlib data', [0x78, 0xda]]];
+function sniff(b) {
+  if (!b.length) return '';
+  for (const [n, s] of SIGS) if (b.length >= s.length && s.every((v, i) => b[i] === v)) return n;
+  if (b.length > 11 && T(b.subarray(0, 4)) === 'RIFF' && T(b.subarray(8, 12)) === 'WEBP') return 'WebP image';
+  if (b.length > 262 && T(b.subarray(257, 262)) === 'ustar') return 'TAR archive';
+  if (b.length > 3e5) return '';
+  let t; try { t = new TextDecoder('utf-8', { fatal: true }).decode(b); } catch { return 'binary data'; }
+  const s = t.trim();
+  if (/^eyJ[\w-]+\.eyJ[\w-]+\./.test(s)) return 'JWT';
+  if (/^[{[]/.test(s)) { try { JSON.parse(s); return 'JSON'; } catch {} }
+  if (/^<(\?xml|!doctype|html|svg)/i.test(s)) return /<svg/i.test(s) ? 'SVG' : 'HTML or XML';
+  const c = s.replace(/\s+/g, '');
+  if (c.length >= 8 && /^[0-9a-f]+$/i.test(c) && c.length % 2 === 0) return 'looks like hex';
+  if (c.length >= 12 && c.length % 4 === 0 && /^[A-Za-z0-9+/]+={0,2}$/.test(c)) return 'looks like Base64';
+  if (/^[01\s]{16,}$/.test(s)) return 'looks like binary';
+  return '';
+}
+
+/* ---------- Magic ---------- */
+const MAGIC_STEPS = [['From Base64', []], ['From Hex', []], ['From Base32', []], ['From Base58', []], ['From Binary', []], ['From Octal', []], ['From Decimal', []],
+  ['URL Decode', []], ['HTML Entity Decode', []], ['Unescape string', []], ['Gunzip', []], ['Zlib inflate', []], ['Raw inflate', []],
+  ['ROT13 / Caesar shift', [13]], ['ROT47', []], ['Atbash', []], ['From Morse Code', []], ['Reverse', ['Character']]];
+const bkey = b => b.length + ':' + hx(b.subarray(0, 48)).join('');
+async function magic(input, opts) {
+  opts = opts || {}; const depth = opts.depth || 3, deadline = Date.now() + (opts.ms || 2500);
+  input = input.subarray(0, 65536); const base = scoreBytes(input);
+  const seen = new Set([bkey(input)]), found = []; let frontier = [{ b: input, chain: [], sc: base }];
+  for (let d = 0; d < depth; d++) {
+    const next = [];
+    for (const node of frontier) for (const [op, args] of MAGIC_STEPS) {
+      if (Date.now() > deadline) break;
+      let r; try { r = await OPMAP[op].f(node.b, args); } catch { continue; }
+      if (!r || !r.length || r.length > 1e6) continue;
+      const k = bkey(r); if (seen.has(k)) continue; seen.add(k);
+      const sc = scoreBytes(r), chain = node.chain.concat([{ op, args }]);
+      found.push({ chain, bytes: r, score: sc - chain.length * 0.05 }); next.push({ b: r, chain, sc });
+    }
+    frontier = next.sort((x, y) => y.sc - x.sc).slice(0, 10);
+  }
+  const floor = Math.max(base + 0.25, 1.2);
+  return found.filter(f => f.score > floor).sort((x, y) => y.score - x.score).slice(0, 6);
+}
+
+G.Engine = { OPS, OPMAP, CATS, B, T, hx, hexdump, toB64, magic, sniff, scoreBytes, entropy };
+})(typeof window !== 'undefined' ? window : globalThis);
+</script>
+
+<!-- ============ INTERFACE ============ -->
+<script>
+(() => {
+'use strict';
+const { OPS, OPMAP, CATS, B, T, hexdump, toB64, magic, sniff, entropy } = window.Engine;
+const $ = id => document.getElementById(id);
+
+/* ---------- tiny helpers ---------- */
+const el = (tag, props = {}, ...kids) => {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) { if (k === 'role' || k.startsWith('aria-') || k.startsWith('data-')) e.setAttribute(k, v); else e[k] = v; }
+  kids.flat().forEach(k => e.append(k)); return e;
+};
+const P = {
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+  moon: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+  star: '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  starFill: '<polygon fill="currentColor" points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/>',
+  undo: '<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>',
+  redo: '<path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/>',
+  copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/>',
+  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/>',
+  wand: '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4M21 5h-4"/>',
+  sliders: '<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',
+  eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+  flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
+  power: '<path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><path d="M12 2v10"/>',
+  trash: '<path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+  x: '<path d="M18 6L6 18M6 6l12 12"/>',
+  link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  help: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/>',
+  book: '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
+  up: '<path d="M18 15l-6-6-6 6"/>', down: '<path d="M6 9l6 6 6-6"/>',
+  arrowUp: '<path d="M12 19V5M5 12l7-7 7 7"/>',
+  wrap: '<path d="M3 6h18M3 12h15a3 3 0 1 1 0 6h-4M16 16l-2 2 2 2M3 18h7"/>',
+  sidebar: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/>',
+  play: '<polygon fill="currentColor" points="6 4 20 12 6 20 6 4"/>',
+  grip: '<circle cx="9" cy="6" r="1.4" fill="currentColor"/><circle cx="15" cy="6" r="1.4" fill="currentColor"/><circle cx="9" cy="12" r="1.4" fill="currentColor"/><circle cx="15" cy="12" r="1.4" fill="currentColor"/><circle cx="9" cy="18" r="1.4" fill="currentColor"/><circle cx="15" cy="18" r="1.4" fill="currentColor"/>',
+  bolt: '<path d="M13 2L3 14h9l-1 8 10-12h-9z"/>',
+};
+const ic = (n, s = 16) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n]}</svg>`;
+const iconBtn = (name, title, fn, cls = '') => { const b = el('button', { className: 'ib ' + cls, type: 'button', title, 'aria-label': title }); b.innerHTML = ic(name, 15); b.onclick = fn; return b; };
+document.querySelectorAll('[data-ic]').forEach(e => e.insertAdjacentHTML('afterbegin', ic(e.dataset.ic, e.classList.contains('ib') ? 17 : 15)));
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('db.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('db.' + k, JSON.stringify(v)); } catch {} },
+};
+function toast(msg) {
+  const t = el('div', { className: 'toast', textContent: msg }); $('toasts').append(t);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 320); }, 2000);
+}
+const download = (name, bytes, type) => { const a = el('a', { href: URL.createObjectURL(new Blob([bytes], { type: type || 'application/octet-stream' })), download: name }); document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); };
+async function copyText(s) { try { await navigator.clipboard.writeText(s); return true; } catch { try { const t = el('textarea', { value: s }); document.body.append(t); t.select(); const ok = document.execCommand('copy'); t.remove(); return !!ok; } catch { return false; } } }
+const b64u = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const unb64u = s => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))));
+
+/* ---------- settings and theme ---------- */
+const DEF = { theme: 'auto', accent: 'gold', fs: 14, wrap: false, peekAll: false, auto: true, shareInput: false, view: 'text', focus: false };
+let S = Object.assign({}, DEF, store.get('settings', {}));
+const mq = matchMedia('(prefers-color-scheme: dark)');
+const resolved = () => S.theme === 'auto' ? (mq.matches ? 'dark' : 'light') : S.theme;
+const pressSet = (seg, v) => seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === v || b.dataset.tab === v || b.dataset.t === v)));
+function applySettings() {
+  const r = document.documentElement; r.dataset.theme = resolved(); r.dataset.accent = S.accent; r.style.setProperty('--fs', S.fs + 'px');
+  $('in').wrap = $('out').wrap = S.wrap ? 'soft' : 'off';
+  document.body.classList.toggle('focus', S.focus);
+  $('themeBtn').innerHTML = ic(resolved() === 'dark' ? 'sun' : 'moon', 17);
+  $('themeBtn').title = resolved() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme';
+  document.querySelector('meta[name=theme-color]').content = resolved() === 'dark' ? '#080D0C' : '#EDEEE9';
+  pressSet($('setTheme'), S.theme); pressSet($('setAccent'), S.accent); pressSet($('viewSeg'), S.view);
+  $('setFs').value = S.fs; $('fsLabel').textContent = S.fs + ' px in the input and output';
+  $('setWrap').checked = S.wrap; $('setPeek').checked = S.peekAll; $('setAuto').checked = S.auto; $('auto').checked = S.auto; $('setShareIn').checked = S.shareInput;
+  $('wrapBtn').classList.toggle('on', S.wrap);
+  renderPeeks();
+}
+const saveSettings = () => { store.set('settings', S); applySettings(); };
+mq.addEventListener('change', applySettings);
+$('themeBtn').onclick = () => { S.theme = resolved() === 'dark' ? 'light' : 'dark'; saveSettings(); };
+$('focusBtn').onclick = () => { S.focus = !S.focus; saveSettings(); };
+$('settingsBtn').onclick = () => $('settingsDlg').showModal();
+$('helpBtn').onclick = () => $('helpDlg').showModal();
+$('setTheme').onclick = e => { const v = e.target.closest('button')?.dataset.v; if (v) { S.theme = v; saveSettings(); } };
+$('setAccent').onclick = e => { const v = e.target.closest('button')?.dataset.v; if (v) { S.accent = v; saveSettings(); } };
+$('setFs').oninput = e => { S.fs = Number(e.target.value); saveSettings(); };
+$('setWrap').onchange = e => { S.wrap = e.target.checked; saveSettings(); };
+$('setPeek').onchange = e => { S.peekAll = e.target.checked; saveSettings(); };
+$('setAuto').onchange = e => { S.auto = e.target.checked; saveSettings(); if (S.auto) bake(); };
+$('auto').onchange = e => { S.auto = e.target.checked; saveSettings(); if (S.auto) bake(); };
+$('setShareIn').onchange = e => { S.shareInput = e.target.checked; saveSettings(); };
+$('resetSet').onclick = () => { S = Object.assign({}, DEF); saveSettings(); toast('Settings reset'); };
+$('wrapBtn').onclick = () => { S.wrap = !S.wrap; saveSettings(); };
+$('viewSeg').onclick = e => { const v = e.target.closest('button')?.dataset.v; if (v) { S.view = v; saveSettings(); renderOutput(); } };
+
+document.addEventListener('click', e => {
+  if (e.target.closest('[data-close]')) e.target.closest('dialog').close();
+  else if (e.target.tagName === 'DIALOG') e.target.close();
+});
+
+/* ---------- state ---------- */
+let recipe = [], nextId = 1, fileBytes = null, lastOut = new Uint8Array(), bakeTok = 0, timer = null, tab = 'all';
+const stepRes = new Map();
+const newStep = (op, args, off) => ({ id: nextId++, op, args: args ? args.slice() : OPMAP[op].a.map(a => a.d), off: !!off, peek: false, bp: false, col: false, anim: false });
+
+/* ---------- history ---------- */
+const hist = { undo: [], redo: [] }; let lastSnapAt = 0, lastKey = null;
+function snap(key) {
+  const now = Date.now();
+  if (key && key === lastKey && now - lastSnapAt < 1200) { lastSnapAt = now; return; }
+  hist.undo.push(JSON.stringify(recipe)); if (hist.undo.length > 100) hist.undo.shift();
+  hist.redo = []; lastSnapAt = now; lastKey = key || null; histUI();
+}
+function restore(json) { recipe = JSON.parse(json); recipe.forEach(s => s.anim = false); renderRecipe(); changed(); }
+function undo() { if (!hist.undo.length) return; hist.redo.push(JSON.stringify(recipe)); restore(hist.undo.pop()); lastKey = null; histUI(); }
+function redo() { if (!hist.redo.length) return; hist.undo.push(JSON.stringify(recipe)); restore(hist.redo.pop()); lastKey = null; histUI(); }
+function histUI() { $('undoBtn').disabled = !hist.undo.length; $('redoBtn').disabled = !hist.redo.length; }
+$('undoBtn').onclick = undo; $('redoBtn').onclick = redo;
+
+/* ---------- favourites and recents ---------- */
+function toggleFav(n) { const f = store.get('fav', []); const i = f.indexOf(n); i < 0 ? f.push(n) : f.splice(i, 1); store.set('fav', f); renderOps(); }
+function pushRecent(n) { const r = store.get('recent', []).filter(x => x !== n); r.unshift(n); store.set('recent', r.slice(0, 10)); if (tab === 'recent') renderOps(); }
+
+/* ---------- operations panel ---------- */
+function opRow(o, isFav) {
+  const row = el('div', { className: 'op', role: 'button', tabIndex: 0, draggable: true, title: o.i || o.n }, el('span', { className: 'dot' }), el('span', { className: 'nm', textContent: o.n }));
+  row.style.setProperty('--c', `var(--c-${o.c})`);
+  const star = el('button', { className: 'star' + (isFav ? ' on' : ''), type: 'button', title: isFav ? 'Remove from starred' : 'Add to starred', 'aria-label': 'Star ' + o.n });
+  star.innerHTML = ic(isFav ? 'starFill' : 'star', 14);
+  star.onclick = e => { e.stopPropagation(); toggleFav(o.n); };
+  row.append(star);
+  row.onclick = () => addStep(o.n);
+  row.onkeydown = e => { if (e.target === row && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); addStep(o.n); } };
+  row.ondragstart = e => { e.dataTransfer.setData('text/plain', 'op:' + o.n); e.dataTransfer.effectAllowed = 'copy'; };
+  return row;
+}
+function renderOps() {
+  const q = $('search').value.trim().toLowerCase(), box = $('ops'); box.replaceChildren();
+  const fav = store.get('fav', []), rec = store.get('recent', []);
+  let list = OPS;
+  if (tab === 'fav') list = OPS.filter(o => fav.includes(o.n));
+  if (tab === 'recent') list = rec.map(n => OPMAP[n]).filter(Boolean);
+  if (q) list = list.filter(o => (o.n + ' ' + o.c + ' ' + (o.i || '')).toLowerCase().includes(q));
+  if (!list.length) { box.append(el('p', { className: 'hint', textContent: q ? 'No operations match your search.' : tab === 'fav' ? 'Star an operation and it will wait for you here.' : 'Operations you add will appear here.' })); return; }
+  const groups = tab === 'recent' ? [['Recently used', list]] : CATS.map(c => [c, list.filter(o => o.c === c)]).filter(g => g[1].length);
+  groups.forEach(([name, items]) => {
+    const d = el('details', { open: true, className: 'grp' }, el('summary', {}, el('span', { textContent: name }), el('em', { textContent: items.length })));
+    items.forEach(o => d.append(opRow(o, fav.includes(o.n)))); box.append(d);
+  });
+}
+$('search').oninput = renderOps;
+$('tabs').onclick = e => { const t = e.target.closest('button')?.dataset.tab; if (t) { tab = t; pressSet($('tabs'), t); renderOps(); } };
+
+/* ---------- recipe ---------- */
+function addStep(opName, at = recipe.length, args, off) {
+  if (!OPMAP[opName]) return; snap();
+  const s = newStep(opName, args, off); s.anim = true; recipe.splice(at, 0, s);
+  pushRecent(opName); renderRecipe(); changed();
+  const c = document.querySelector(`.step[data-id="${s.id}"]`); if (c) c.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+function removeStep(i) { snap(); recipe.splice(i, 1); renderRecipe(); changed(); }
+function moveStep(from, to, refocus) {
+  if (to < 0 || to >= recipe.length || from === to) return; snap();
+  const [s] = recipe.splice(from, 1); recipe.splice(to, 0, s); renderRecipe(); changed();
+  if (refocus) document.querySelector(`.step[data-id="${s.id}"] .grip`)?.focus();
+}
+function renderRecipe() {
+  const box = $('recipe'); box.replaceChildren();
+  $('stepCount').textContent = recipe.length ? recipe.length + (recipe.length === 1 ? ' step' : ' steps') : '';
+  if (!recipe.length) { box.append(el('div', { className: 'empty' }, el('b', { textContent: 'Your recipe is empty' }), 'Click an operation, press Ctrl K, or drag one here. Steps run from top to bottom.')); return; }
+  recipe.forEach((s, idx) => {
+    const op = OPMAP[s.op];
+    const card = el('div', { className: 'step' + (s.off ? ' off' : '') + (s.bp ? ' bp' : '') + (s.anim ? ' new' : '') });
+    card.dataset.id = s.id; card.style.setProperty('--c', `var(--c-${op.c})`); s.anim = false;
+    const grip = el('span', { className: 'grip', draggable: true, tabIndex: 0, title: 'Drag to reorder. Arrow keys also move this step.', role: 'button', 'aria-label': 'Reorder ' + s.op });
+    grip.innerHTML = ic('grip', 14);
+    grip.ondragstart = e => { e.dataTransfer.setData('text/plain', 'step:' + s.id); e.dataTransfer.setDragImage(card, 12, 12); };
+    grip.onkeydown = e => { if (e.key === 'ArrowUp') { e.preventDefault(); moveStep(idx, idx - 1, true); } if (e.key === 'ArrowDown') { e.preventDefault(); moveStep(idx, idx + 1, true); } };
+    const head = el('div', { className: 'step-h' }, grip, el('span', { className: 'num', textContent: idx + 1 }), el('b', { textContent: s.op, title: op.i || s.op }),
+      iconBtn('up', 'Move up', () => moveStep(idx, idx - 1), 'mv'), iconBtn('down', 'Move down', () => moveStep(idx, idx + 1), 'mv'),
+      iconBtn('eye', 'Preview this step\'s output', () => { s.peek = !s.peek; renderRecipe(); renderPeeks(); }, s.peek ? 'on' : ''),
+      iconBtn('flag', s.bp ? 'Remove breakpoint' : 'Stop the recipe after this step', () => { snap(); s.bp = !s.bp; renderRecipe(); changed(); }, s.bp ? 'on' : ''),
+      iconBtn('power', s.off ? 'Enable step' : 'Disable step', () => { snap(); s.off = !s.off; renderRecipe(); changed(); }, s.off ? '' : 'on'),
+      iconBtn('copy', 'Duplicate step', () => { snap(); const c = newStep(s.op, s.args, s.off); c.anim = true; recipe.splice(idx + 1, 0, c); renderRecipe(); changed(); }),
+      iconBtn('x', 'Remove step', () => removeStep(idx)));
+    card.append(head);
+    if (op.a.length) {
+      const args = el('div', { className: 'args' });
+      op.a.forEach((a, i) => {
+        let input;
+        if (a.t === 'select') { input = el('select'); a.o.forEach(o => input.append(el('option', { value: o, textContent: o }))); input.value = s.args[i]; }
+        else if (a.t === 'bool') input = el('input', { type: 'checkbox', checked: !!s.args[i] });
+        else input = el('input', { type: a.t === 'number' ? 'number' : 'text', value: s.args[i], spellcheck: false, autocomplete: 'off' });
+        const ev = a.t === 'select' || a.t === 'bool' ? 'change' : 'input';
+        input.addEventListener(ev, () => { snap('a' + s.id + ':' + i); s.args[i] = a.t === 'bool' ? input.checked : input.value; changed(true); });
+        args.append(a.t === 'bool' ? el('label', { className: 'b' }, input, a.n) : el('label', {}, a.n, input));
+      });
+      card.append(args);
+    }
+    card.append(el('div', { className: 'err', hidden: true }), el('div', { className: 'peek', hidden: true }));
+    box.append(card);
+  });
+  renderPeeks();
+}
+function renderPeeks() {
+  document.querySelectorAll('.step').forEach(c => {
+    const s = recipe.find(x => x.id === Number(c.dataset.id)), p = c.querySelector('.peek'); if (!s || !p) return;
+    const r = stepRes.get(s.id), show = (s.peek || S.peekAll) && r && !s.off; p.hidden = !show;
+    if (show) p.replaceChildren(el('div', { className: 'pm', textContent: `${r.len} bytes, ${r.ms} ms` }), el('pre', { textContent: r.text }));
+  });
+}
+function setStepError(id, msg) {
+  document.querySelectorAll('.step').forEach(c => { const e = c.querySelector('.err'); if (!e) return; const mine = msg && Number(c.dataset.id) === id; e.hidden = !mine; e.textContent = mine ? msg : ''; });
+}
+$('clearRecipe').onclick = () => { if (!recipe.length) return; snap(); recipe = []; renderRecipe(); changed(); toast('Recipe cleared. Undo with Alt Z.'); };
+
+const recipeWrap = $('recipeWrap');
+function dropIndex(y) { const cards = [...$('recipe').querySelectorAll('.step')]; const i = cards.findIndex(c => { const r = c.getBoundingClientRect(); return y < r.top + r.height / 2; }); return i < 0 ? recipe.length : i; }
+function clearDropline() { $('recipe').querySelectorAll('.dropline').forEach(x => x.remove()); }
+recipeWrap.addEventListener('dragover', e => {
+  if ([...e.dataTransfer.types].includes('Files')) return; e.preventDefault(); clearDropline();
+  const at = dropIndex(e.clientY), cards = $('recipe').querySelectorAll('.step'), line = el('div', { className: 'dropline' });
+  if (cards[at]) cards[at].before(line); else $('recipe').append(line);
+});
+recipeWrap.addEventListener('dragleave', e => { if (!recipeWrap.contains(e.relatedTarget)) clearDropline(); });
+recipeWrap.addEventListener('drop', e => {
+  const d = e.dataTransfer.getData('text/plain'); if (!d) return; e.preventDefault(); const at = dropIndex(e.clientY); clearDropline();
+  if (d.startsWith('op:')) addStep(d.slice(3), at);
+  else if (d.startsWith('step:')) { const from = recipe.findIndex(s => s.id === Number(d.slice(5))); if (from < 0) return; snap(); const [s] = recipe.splice(from, 1); recipe.splice(from < at ? at - 1 : at, 0, s); renderRecipe(); changed(); }
+});
+document.addEventListener('dragend', clearDropline);
+
+/* ---------- bake ---------- */
+const previewText = b => { const s = b.subarray(0, 600); try { return new TextDecoder('utf-8', { fatal: true }).decode(s).slice(0, 400) + (b.length > 600 ? '…' : ''); } catch { return hexdump(b.subarray(0, 48)) + (b.length > 48 ? '\n…' : ''); } };
+const inputBytes = () => fileBytes || B($('in').value);
+async function bake() {
+  const tok = ++bakeTok, t0 = performance.now(); let data = inputBytes(), stoppedAt = null;
+  stepRes.clear(); setStepError(-1, null); $('out').classList.remove('bad');
+  for (const s of recipe) {
+    if (s.off) continue; const t1 = performance.now();
+    try { data = await OPMAP[s.op].f(data, s.args); }
+    catch (e) { if (tok !== bakeTok) return; const m = e && e.message ? e.message : String(e); setStepError(s.id, m); $('out').classList.add('bad'); $('out').value = `${s.op}: ${m}`; $('outMeta').replaceChildren(); renderPeeks(); return; }
+    if (tok !== bakeTok) return;
+    stepRes.set(s.id, { len: data.length, ms: Math.max(0, Math.round(performance.now() - t1)), text: previewText(data) });
+    if (s.bp) { stoppedAt = s.op; break; }
+  }
+  lastOut = data; renderOutput(); renderPeeks();
+  const ms = Math.max(1, Math.round(performance.now() - t0));
+  const lines = data.length ? T(data.subarray(0, 2e6)).split('\n').length : 0;
+  const mts = [`${data.length.toLocaleString()} bytes`, `${lines.toLocaleString()} lines`, `entropy ${entropy(data).toFixed(2)}`, `${ms} ms`];
+  $('outMeta').replaceChildren(...mts.map(t => el('span', { className: 'mt', textContent: t })), ...(stoppedAt ? [el('span', { className: 'mt kind', textContent: 'stopped after ' + stoppedAt })] : []));
+}
+function renderOutput() {
+  const b = lastOut; let t;
+  if (S.view === 'hex') { t = hexdump(b.subarray(0, 65536)); if (b.length > 65536) t += '\n… first 64 KB shown. Save the file to get everything.'; }
+  else if (S.view === 'b64') t = toB64(b);
+  else { try { t = new TextDecoder('utf-8', { fatal: true }).decode(b); } catch { t = new TextDecoder().decode(b); } if (t.length > 2e6) t = t.slice(0, 2e6) + '\n… truncated for display. Save the file to get everything.'; }
+  $('out').value = t; $('out').classList.remove('bad');
+}
+$('bakeBtn').onclick = bake;
+
+/* ---------- persistence, share links, session ---------- */
+const serial = () => recipe.map(s => [s.op, s.args, s.off ? 1 : 0, s.bp ? 1 : 0]);
+function writeHash(withInput) {
+  const o = { r: serial() }; if (withInput) o.i = $('in').value;
+  history.replaceState(null, '', recipe.length || withInput ? '#r=' + b64u(JSON.stringify(o)) : location.pathname + location.search);
+}
+function readHash() {
+  const m = location.hash.match(/^#r=(.+)$/); if (!m) return false;
+  try { let o = JSON.parse(unb64u(m[1])); if (Array.isArray(o)) o = { r: o };
+    o.r.forEach(([op, args, off, bp]) => { if (OPMAP[op]) { const s = newStep(op, args, off); s.bp = !!bp; recipe.push(s); } });
+    if (typeof o.i === 'string') $('in').value = o.i; return true; } catch { return false; }
+}
+let sessT = null;
+function saveSession() { clearTimeout(sessT); sessT = setTimeout(() => store.set('session', { r: serial(), i: $('in').value.slice(0, 20000) }), 500); }
+function changed(argsOnly) { saveSession(); if (S.auto) { clearTimeout(timer); timer = setTimeout(bake, argsOnly ? 140 : 0); } }
+$('shareBtn').onclick = async () => {
+  const withIn = S.shareInput && $('in').value.length <= 3000 && !fileBytes; writeHash(withIn);
+  if (S.shareInput && !withIn) toast('Input is too long to include. Link has the recipe only.');
+  if (await copyText(location.href)) toast('Share link copied'); else toast('Could not copy. Copy it from the address bar.');
+};
+
+/* ---------- input and output controls ---------- */
+function updateInMeta() {
+  const b = inputBytes(), kind = sniff(b), mts = [el('span', { className: 'mt', textContent: b.length.toLocaleString() + ' bytes' })];
+  if (kind) mts.push(el('span', { className: 'mt kind', textContent: kind })); $('inMeta').replaceChildren(...mts);
+}
+function setFile(bytes, name) {
+  fileBytes = bytes; $('fileChip').style.display = bytes ? 'flex' : 'none'; $('in').disabled = !!bytes;
+  if (bytes) $('fileName').textContent = `${name} (${bytes.length.toLocaleString()} bytes) is the input`;
+  updateInMeta(); changed();
+}
+async function loadFile(f) { if (!f) return; if (f.size > 50e6) { toast('That file is over 50 MB.'); return; } setFile(new Uint8Array(await f.arrayBuffer()), f.name); }
+$('in').addEventListener('input', () => { updateInMeta(); changed(true); });
+$('clearIn').onclick = () => { $('in').value = ''; setFile(null); $('in').focus(); };
+$('openFile').onclick = () => $('file').click();
+$('file').onchange = e => { loadFile(e.target.files[0]); e.target.value = ''; };
+$('dropFile').onclick = () => setFile(null);
+['dragenter', 'dragover'].forEach(ev => $('inPanel').addEventListener(ev, e => { if ([...e.dataTransfer.types].includes('Files')) { e.preventDefault(); $('inPanel').classList.add('drop'); } }));
+['dragleave', 'drop'].forEach(ev => $('inPanel').addEventListener(ev, e => { $('inPanel').classList.remove('drop'); if (ev === 'drop' && e.dataTransfer.files.length) { e.preventDefault(); loadFile(e.dataTransfer.files[0]); } }));
+$('copy').onclick = async () => toast((await copyText($('out').value)) ? 'Copied' : 'Could not copy');
+$('toIn').onclick = () => { fileBytes = null; $('fileChip').style.display = 'none'; $('in').disabled = false; $('in').value = new TextDecoder().decode(lastOut); updateInMeta(); changed(); toast('Output moved to input'); };
+$('save').onclick = () => { let txt = true; try { new TextDecoder('utf-8', { fatal: true }).decode(lastOut); } catch { txt = false; } download(txt ? 'output.txt' : 'output.bin', lastOut); };
+
+/* ---------- Magic ---------- */
+function applyChain(chain, mode) {
+  snap(); const steps = chain.map(c => { const s = newStep(c.op, c.args.length ? c.args : null); s.anim = true; return s; });
+  recipe = mode === 'replace' ? steps : recipe.concat(steps); renderRecipe(); changed(); $('magicDlg').close(); toast(mode === 'replace' ? 'Recipe replaced. Undo with Alt Z.' : 'Steps added');
+}
+async function openMagic(source) {
+  $('magicTitle').textContent = source === 'output' ? 'Magic on the output' : 'Magic on the input';
+  const list = $('magicList'); list.replaceChildren(el('p', { className: 'hint', textContent: 'Analyzing…' })); $('magicDlg').showModal();
+  const bytes = source === 'output' ? lastOut : inputBytes(), kind = sniff(bytes);
+  $('magicKind').replaceChildren(el('span', { className: 'mt', textContent: bytes.length.toLocaleString() + ' bytes' }), ...(kind ? [el('span', { className: 'mt kind', textContent: 'Detected: ' + kind })] : []));
+  if (!bytes.length) { list.replaceChildren(el('p', { className: 'hint', textContent: 'There is nothing to analyze yet.' })); return; }
+  const res = await magic(bytes); list.replaceChildren();
+  if (!res.length) { list.append(el('p', { className: 'hint', textContent: 'No decoding stood out. The data may already be readable, or it may use a key or a method this tool does not guess.' })); return; }
+  res.forEach(r => {
+    const chain = el('div', { className: 'chain' }); r.chain.forEach((c, i) => { if (i) chain.append(el('i', { textContent: '›' })); chain.append(el('span', { textContent: c.op })); });
+    const btn = el('button', { className: 'btn sm primary', type: 'button', textContent: source === 'output' ? 'Add to recipe' : 'Use this recipe' });
+    btn.onclick = () => applyChain(r.chain, source === 'output' ? 'append' : 'replace');
+    list.append(el('div', { className: 'res' }, el('div', { className: 'top2' }, chain, btn), el('pre', { className: 'pv', textContent: previewText(r.bytes) })));
+  });
+}
+$('magicBtn').onclick = () => openMagic('input'); $('magicIn').onclick = () => openMagic('input'); $('magicOut').onclick = () => openMagic('output');
+
+/* ---------- Library ---------- */
+const EXAMPLES = [
+  { name: 'Decode a Base64 message', desc: 'The simplest start.', input: 'SGVsbG8sIFdvcmxkISBEZWNvZGUgQmVuY2ggd29ya3Mu', r: [['From Base64', []]] },
+  { name: 'Unpack a gzip payload', desc: 'Base64 on the outside, gzip underneath.', input: 'H4sIAAAAAAAAAwvJSFUoLM1MzlZIKsovz1NIy69QyCrNLShWyC9LLVIoyUhVyEmsqlRIyU/XU3BJTc5PSU1RKM8syYByFJxS85Iz9ACaLiroRwAAAA==', r: [['From Base64', []], ['Gunzip', []]] },
+  { name: 'Peel layered encoding', desc: 'Hex over Base64. Try Magic on this input.', input: '5a6d78685a33747359586c6c636e4e6659584a6c5832703163335266623235706232357a66513d3d', r: [['From Hex', []], ['From Base64', []]] },
+  { name: 'Crack a single-byte XOR', desc: 'Try every key and read the best matches.', input: '474f4f5e0a474f0a4b5e0a5e424f0a45464e0a4858434e4d4f0a4b5e0a47434e44434d425e', r: [['From Hex', []], ['XOR brute force', []]] },
+  { name: 'Inspect a JWT', desc: 'Header, payload and expiry times.', input: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkFkYSBMb3ZlbGFjZSIsImlhdCI6MTUxNjIzOTAyMiwiZXhwIjo0MTAyNDQ0ODAwfQ.c2lnbmF0dXJl', r: [['Parse JWT', []]] },
+  { name: 'Hash with everything', desc: 'MD5, SHA family and CRC32 side by side.', input: 'The quick brown fox jumps over the lazy dog', r: [['Multi-hash', []]] },
+  { name: 'Pull indicators from a report', desc: 'Extract links, remove repeats, then defang.', input: 'Seen beaconing to http://evil.example.com/a.php and https://cdn.example.net/x.js\nSecond hit on http://evil.example.com/a.php from 203.0.113.7', r: [['Extract URLs', []], ['Unique lines', []], ['Defang URL', []]] },
+  { name: 'Encrypt and decrypt with AES-GCM', desc: 'A round trip with a password. Turn on step previews to watch it.', input: 'Top secret: the vault opens at midnight.', r: [['AES-GCM Encrypt', ['correct horse', 100000]], ['AES-GCM Decrypt', ['correct horse', 100000]]] },
+  { name: 'Tidy a JSON blob', desc: 'Beautify with sorted keys.', input: '{"zeta":1,"alpha":{"b":[1,2,3],"a":true},"name":"Decode Bench"}', r: [['JSON beautify', [2, true]]] },
+  { name: 'Read Morse code', desc: 'Dots and dashes to text.', input: '... --- ... / -.. . -.-. --- -.. . / -... . -. -.-. ....', r: [['From Morse Code', []]] },
+];
+let libTab = 'ex';
+function loadObj(o) {
+  const rec = (o.recipe || o.r || []).map(s => Array.isArray(s) ? { op: s[0], args: s[1], off: s[2] } : s).filter(s => OPMAP[s.op]);
+  snap(); recipe = rec.map(s => newStep(s.op, Array.isArray(s.args) ? s.args : null, s.off)); recipe.forEach(s => s.anim = true);
+  if (typeof o.input === 'string') { fileBytes = null; $('fileChip').style.display = 'none'; $('in').disabled = false; $('in').value = o.input; }
+  renderRecipe(); updateInMeta(); changed(); $('libDlg').close(); toast('Loaded');
+}
+function renderLib() {
+  pressSet($('libTabs'), libTab); const body = $('libBody'); body.replaceChildren();
+  if (libTab === 'ex') {
+    EXAMPLES.forEach(ex => { const b = el('button', { className: 'btn sm', type: 'button', textContent: 'Load' }); b.onclick = () => loadObj({ recipe: ex.r, input: ex.input });
+      body.append(el('div', { className: 'row' }, el('div', { className: 'tx' }, el('b', { textContent: ex.name }), el('span', { textContent: ex.desc })), b)); });
+    return;
+  }
+  const nm = el('input', { className: 'fld', placeholder: 'Name this recipe', maxLength: 60 }), inc = el('input', { type: 'checkbox' });
+  const save = el('button', { className: 'btn primary', type: 'button', textContent: 'Save current' });
+  save.onclick = () => { if (!recipe.length) return toast('Add a step first'); const list = store.get('saved', []); list.unshift({ name: nm.value.trim() || 'Untitled recipe', recipe: serial().map(([op, args, off]) => ({ op, args, off })), input: inc.checked ? $('in').value.slice(0, 20000) : undefined, at: Date.now() }); store.set('saved', list); toast('Recipe saved'); renderLib(); };
+  body.append(el('div', { className: 'row' }, nm, save), el('div', { className: 'row' }, el('label', { className: 'sw' }, inc, el('i'), 'Include the current input')));
+  const list = store.get('saved', []);
+  if (!list.length) body.append(el('p', { className: 'hint', textContent: 'Saved recipes live in this browser. Export one to move it to another device.' }));
+  list.forEach((r, i) => {
+    const load = el('button', { className: 'btn sm', type: 'button', textContent: 'Load' }), del = iconBtn('trash', 'Delete', () => { list.splice(i, 1); store.set('saved', list); renderLib(); });
+    load.onclick = () => loadObj(r);
+    body.append(el('div', { className: 'row' }, el('div', { className: 'tx' }, el('b', { textContent: r.name }), el('span', { textContent: r.recipe.map(s => s.op).join(' › ') || 'Empty recipe' })), load, del));
+  });
+  const exp = el('button', { className: 'btn', type: 'button', textContent: 'Export current recipe' }), cp = el('button', { className: 'btn', type: 'button', textContent: 'Copy as JSON' }), imp = el('button', { className: 'btn', type: 'button', textContent: 'Import file' }), pf = el('input', { type: 'file', accept: '.json,application/json', hidden: true });
+  const obj = () => ({ app: 'decode-bench', v: 1, name: 'Decode Bench recipe', recipe: serial().map(([op, args, off]) => ({ op, args, off })), input: $('in').value.slice(0, 20000) });
+  exp.onclick = () => download('recipe.json', JSON.stringify(obj(), null, 2), 'application/json');
+  cp.onclick = async () => toast((await copyText(JSON.stringify(obj()))) ? 'JSON copied' : 'Could not copy');
+  imp.onclick = () => pf.click();
+  pf.onchange = async e => { try { loadObj(JSON.parse(await e.target.files[0].text())); } catch { toast('That file is not a valid recipe'); } };
+  body.append(el('div', { className: 'row', style: 'flex-wrap:wrap' }, exp, cp, imp, pf));
+}
+$('libBtn').onclick = () => { renderLib(); $('libDlg').showModal(); };
+$('libTabs').onclick = e => { const t = e.target.closest('button')?.dataset.t; if (t) { libTab = t; renderLib(); } };
+
+/* ---------- command palette ---------- */
+const fuzzy = (q, t) => { q = q.toLowerCase(); t = t.toLowerCase(); if (!q) return 1; const i = t.indexOf(q); if (i >= 0) return 200 - i; let qi = 0, sc = 0; for (let ti = 0; ti < t.length && qi < q.length; ti++) if (t[ti] === q[qi]) { qi++; sc++; } return qi === q.length ? sc : 0; };
+const ACTIONS = [
+  ['Bake the recipe', 'Ctrl Enter', () => bake()], ['Toggle light and dark theme', '', () => $('themeBtn').click()], ['Open Magic on the input', '', () => openMagic('input')],
+  ['Open Magic on the output', '', () => openMagic('output')], ['Open the Library', '', () => $('libBtn').click()], ['Open settings', '', () => $('settingsBtn').click()],
+  ['Undo', 'Alt Z', undo], ['Redo', 'Alt Shift Z', redo], ['Clear the recipe', '', () => $('clearRecipe').click()], ['Copy share link', '', () => $('shareBtn').click()],
+  ['Copy the output', '', () => $('copy').click()], ['Use the output as input', '', () => $('toIn').click()], ['Toggle focus mode', '', () => $('focusBtn').click()],
+  ['Show output as text', '', () => { S.view = 'text'; saveSettings(); renderOutput(); }], ['Show output as hex', '', () => { S.view = 'hex'; saveSettings(); renderOutput(); }], ['Show output as Base64', '', () => { S.view = 'b64'; saveSettings(); renderOutput(); }],
+];
+let palItems = [], palSel = 0;
+function renderPal() {
+  const q = $('palIn').value.trim(), fav = store.get('fav', []);
+  const all = [...ACTIONS.map(([label, hint, run]) => ({ label, hint: hint || 'Action', run, sc: fuzzy(q, label) })),
+    ...OPS.map(o => ({ label: o.n, hint: o.c, color: `var(--c-${o.c})`, run: () => addStep(o.n), sc: fuzzy(q, o.n + ' ' + o.c) + (fav.includes(o.n) ? 2 : 0) }))];
+  palItems = all.filter(x => x.sc > 0).sort((a, b) => b.sc - a.sc).slice(0, 40); palSel = 0; drawPal();
+}
+function drawPal() {
+  const box = $('palList'); box.replaceChildren();
+  if (!palItems.length) { box.append(el('p', { className: 'hint', textContent: 'Nothing matches.' })); return; }
+  palItems.forEach((it, i) => { const row = el('div', { className: 'pi', role: 'option', 'aria-selected': String(i === palSel) }, el('span', { className: 'dot' }), el('span', { textContent: it.label }), el('em', { textContent: it.hint }));
+    if (it.color) row.style.setProperty('--c', it.color); row.onclick = () => runPal(i); row.onmousemove = () => { if (palSel !== i) { palSel = i; box.querySelectorAll('.pi').forEach((r, j) => r.setAttribute('aria-selected', String(j === i))); } }; box.append(row); });
+  box.children[palSel]?.scrollIntoView({ block: 'nearest' });
+}
+function runPal(i) { const it = palItems[i]; if (!it) return; $('palette').close(); it.run(); }
+function openPalette() { $('palIn').value = ''; renderPal(); $('palette').showModal(); $('palIn').focus(); }
+$('openPalette').onclick = openPalette;
+$('palIn').oninput = renderPal;
+$('palIn').onkeydown = e => {
+  if (e.key === 'ArrowDown') { e.preventDefault(); palSel = Math.min(palItems.length - 1, palSel + 1); drawPal(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); palSel = Math.max(0, palSel - 1); drawPal(); }
+  else if (e.key === 'Enter') { e.preventDefault(); runPal(palSel); }
+};
+
+/* ---------- global shortcuts ---------- */
+addEventListener('keydown', e => {
+  const mod = e.ctrlKey || e.metaKey, typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName), dlg = document.querySelector('dialog[open]');
+  if (mod && e.key.toLowerCase() === 'k') { e.preventDefault(); if ($('palette').open) $('palette').close(); else openPalette(); return; }
+  if (dlg) return;
+  if (mod && e.key === 'Enter') { e.preventDefault(); bake(); return; }
+  if (e.altKey && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if (mod && !typing && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if (!typing && !mod && e.key === '/') { e.preventDefault(); if (S.focus) { S.focus = false; saveSettings(); } $('search').focus(); return; }
+  if (!typing && !mod && e.key === '?') { e.preventDefault(); $('helpDlg').showModal(); }
+});
+
+/* ---------- start ---------- */
+applySettings(); renderOps(); histUI();
+if (!readHash()) {
+  const ses = store.get('session', null);
+  if (ses && Array.isArray(ses.r) && (ses.r.length || ses.i)) { ses.r.forEach(([op, args, off, bp]) => { if (OPMAP[op]) { const s = newStep(op, args, off); s.bp = !!bp; recipe.push(s); } }); $('in').value = ses.i || ''; }
+  else { $('in').value = 'SGVsbG8sIFdvcmxkISBEZWNvZGUgQmVuY2ggd29ya3Mu'; recipe.push(newStep('From Base64')); }
+}
+renderRecipe(); updateInMeta(); bake();
+})();
+</script>
+</body>
+</html>
