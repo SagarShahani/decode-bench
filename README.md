@@ -53,39 +53,5 @@ Open **https://sagarshahani.github.io/decode-bench/** in any modern browser.
 ```bash
 git clone https://github.com/SagarShahani/decode-bench.git
 cd decode-bench
-# Open index.html directly, or serve it:
 python3 -m http.server 8000
 # Then visit http://localhost:8000
-
-Author
-Sagar Shahani
-
-GitHub: @SagarShahani
-
-LinkedIn: sagar-ali-66a324277
-
-Medium: @SaGarShahani
-
-
----
-
-## How to paste this in
-
-1. Open your repo → click **README.md**.
-2. Click the **pencil icon** (✏️ Edit this file) at the top right of the file view.
-3. Select all (`Ctrl+A`) and delete the old contents.
-4. Paste the block above.
-5. Scroll down → **Commit changes** → confirm.
-
-GitHub Pages will redeploy automatically in ~1 minute — but note the README is only what shows on the repo page; your actual site is driven by `index.html`, which is already correct.
-
----
-
-### A few small things worth doing after:
-
-1. **Add a LICENSE file** — the README references MIT. On the repo Code tab: **Add file → Create new file** → name it `LICENSE` → GitHub offers a template picker → choose **MIT License**.
-2. **Fill in the About panel** — click the ⚙️ gear next to *About* on the right of the repo page:
-   - **Description:** `CyberChef-style in-browser encoder/decoder. 98 ops, Magic, recipes — all client-side.`
-   - **Website:** `https://sagarshahani.github.io/decode-bench/`
-   - **Topics:** `cybersecurity`, `cyberchef`, `encoding`, `decoding`, `tools`, `javascript`, `client-side`
-3. **Fix your password** — Settings → Password and authentication.
